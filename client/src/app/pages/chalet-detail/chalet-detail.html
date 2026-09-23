@@ -1,0 +1,487 @@
+<div class="chalet-detail-page container">
+  <!-- Loading state -->
+  @if (isLoading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando información del chalet...</p>
+    </div>
+  } @else if (chalet) {
+    <!-- Breadcrumbs -->
+    <div class="detail-breadcrumbs">
+      <a routerLink="/explore"><i class="fa-solid fa-arrow-left"></i> Volver a Chalets de Guatemala</a>
+      <span class="bc-sep">/</span>
+      <span>{{ chalet.department }}</span>
+      <span class="bc-sep">/</span>
+      <span class="bc-current">{{ chalet.title }}</span>
+    </div>
+
+    <!-- Header Section -->
+    <div class="detail-header">
+      <div>
+        <div class="detail-badges">
+          <span class="badge badge-category">
+            <i class="fa-solid fa-mountain-sun"></i> {{ chalet.category }}
+          </span>
+          <span class="badge badge-verified">
+            <i class="fa-solid fa-shield-check"></i> Chalet Verificado
+          </span>
+        </div>
+        <h1 class="detail-title">{{ chalet.title }}</h1>
+        <div class="detail-subline">
+          <span class="detail-rating-pill">
+            <i class="fa-solid fa-star"></i>
+            <strong>{{ chalet.rating.toFixed(1) }}</strong>
+            <span class="subline-reviews">({{ chalet.reviewsCount }} reseñas verificadas)</span>
+          </span>
+          <span class="subline-dot">•</span>
+          <span class="detail-location">
+            <i class="fa-solid fa-location-dot"></i> {{ chalet.locationName }}
+          </span>
+          @if (distanceFormatted) {
+            <span class="subline-dot">•</span>
+            <span class="detail-distance-badge" title="Distancia calculada desde {{ geoService.userLocation().name }}">
+              <i class="fa-solid fa-route"></i> a {{ distanceFormatted }} de tu punto de partida
+            </span>
+          }
+        </div>
+      </div>
+
+      <div class="detail-header-actions">
+        <button 
+          class="action-btn compare-action-btn" 
+          [class.is-active]="isCompared" 
+          (click)="toggleCompare()" 
+          [title]="isCompared ? 'Quitar de comparador' : 'Agregar a comparador'">
+          <i class="fa-solid fa-scale-balanced"></i>
+          <span>{{ isCompared ? 'En Comparador' : 'Comparar' }}</span>
+        </button>
+
+        <button class="action-btn" (click)="toggleFavorite()">
+          <i class="fa-solid fa-heart" [style.color]="isFav ? '#F43F5E' : 'inherit'"></i>
+          <span>{{ isFav ? 'Guardado' : 'Guardar' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Photo Gallery -->
+    <div class="gallery-container">
+      <div class="main-image-box">
+        <img [src]="selectedImage" [alt]="chalet.title" class="main-gallery-img" />
+      </div>
+      <div class="thumbnails-grid">
+        @for (img of chalet.images; track img) {
+          <div 
+            class="thumb-box" 
+            [class.active]="selectedImage === img" 
+            (click)="selectImage(img)">
+            <img [src]="img" [alt]="chalet.title" class="thumb-img" />
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Main Content Layout (2 Cols) -->
+    <div class="detail-layout">
+      <!-- Left Column: Details & Reviews -->
+      <div class="detail-left-col">
+        <!-- Host Spotlight Card ("El que Alquila") -->
+        <div class="host-card glass-panel">
+          <div class="host-card-header">
+            <div class="host-avatar-wrapper">
+              <img [src]="chalet.host.avatar" [alt]="chalet.host.name" class="host-avatar-large" />
+              @if (chalet.host.superhost) {
+                <span class="superhost-badge-icon" title="Superanfitrión">★</span>
+              }
+            </div>
+
+            <div class="host-info">
+              <div class="host-name-row">
+                <h3>Alquilado por {{ chalet.host.name }}</h3>
+                @if (chalet.host.superhost) {
+                  <span class="badge badge-superhost">Superanfitrión</span>
+                }
+              </div>
+              <p class="host-location">{{ chalet.host.location || chalet.department }} • Miembro desde {{ chalet.host.memberSince }}</p>
+
+              <div class="host-stats">
+                <span class="host-stat-item">
+                  <i class="fa-solid fa-star text-gold"></i> {{ chalet.host.rating }} Calificación
+                </span>
+                <span class="host-stat-item">
+                  <i class="fa-solid fa-clock"></i> Responde en {{ chalet.host.responseTime }}
+                </span>
+                <span class="host-stat-item">
+                  <i class="fa-solid fa-phone"></i> {{ chalet.host.phone || '+502 5555-0000' }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          @if (chalet.host.bio) {
+            <p class="host-bio">"{{ chalet.host.bio }}"</p>
+          }
+
+          <div class="host-actions">
+            <a [routerLink]="['/host', chalet.host._id]" class="btn-outline btn-sm">
+              <i class="fa-solid fa-user"></i> Ver perfil del anfitrión y otros chalets
+            </a>
+          </div>
+        </div>
+
+        <!-- Chalet Specs Bar -->
+        <div class="specs-bar glass-panel">
+          <div class="spec-block">
+            <i class="fa-solid fa-user-group"></i>
+            <div>
+              <strong>{{ chalet.guestsMax }} Huéspedes</strong>
+              <span>Capacidad máxima</span>
+            </div>
+          </div>
+          <div class="spec-block">
+            <i class="fa-solid fa-door-open"></i>
+            <div>
+              <strong>{{ chalet.bedrooms }} Dormitorios</strong>
+              <span>Espacios privados</span>
+            </div>
+          </div>
+          <div class="spec-block">
+            <i class="fa-solid fa-bed"></i>
+            <div>
+              <strong>{{ chalet.beds }} Camas</strong>
+              <span>Total para dormir</span>
+            </div>
+          </div>
+          <div class="spec-block">
+            <i class="fa-solid fa-bath"></i>
+            <div>
+              <strong>{{ chalet.bathrooms }} Baños</strong>
+              <span>Completos</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="detail-section">
+          <h2 class="section-subtitle">Acerca de este chalet</h2>
+          <p class="chalet-description-text">{{ chalet.description }}</p>
+        </div>
+
+        <!-- Interactive Location & Exact Coordinates Section -->
+        <div class="detail-section location-detail-section">
+          <div class="location-header-row">
+            <div>
+              <h2 class="section-subtitle"><i class="fa-solid fa-map-location-dot"></i> Ubicación Exacta y Entorno</h2>
+              <p class="location-address-text">
+                <i class="fa-solid fa-location-pin"></i>
+                {{ chalet.locationName }}, {{ chalet.municipality }}, {{ chalet.department }}
+              </p>
+            </div>
+
+            @if (distanceFormatted) {
+              <div class="distance-hero-pill glass-panel">
+                <i class="fa-solid fa-route"></i>
+                <div>
+                  <span class="d-val">a {{ distanceFormatted }}</span>
+                  <span class="d-lbl">desde {{ geoService.userLocation().name }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (chalet.coordinates?.lat && chalet.coordinates?.lng) {
+            <div class="chalet-map-box">
+              <app-chalet-map 
+                [chalets]="[chalet]" 
+                [selectedChalet]="chalet" 
+                height="380px">
+              </app-chalet-map>
+
+              <!-- Exact Coordinates & Navigation Bar -->
+              <div class="map-nav-toolbar glass-panel">
+                <div class="coords-display">
+                  <span class="coords-icon"><i class="fa-solid fa-compass"></i></span>
+                  <div>
+                    <span class="coords-title">Coordenadas exactas:</span>
+                    <span class="coords-numbers">
+                      {{ chalet.coordinates.lat.toFixed(5) }}° N, {{ chalet.coordinates.lng.toFixed(5) }}° W
+                    </span>
+                  </div>
+                </div>
+
+                @if (googleMapsDirectionsUrl) {
+                  <a 
+                    [href]="googleMapsDirectionsUrl" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    class="btn-primary btn-directions-link">
+                    <i class="fa-solid fa-diamond-turn-right"></i>
+                    <span>Cómo llegar en Google Maps</span>
+                  </a>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Amenities -->
+        <div class="detail-section">
+          <h2 class="section-subtitle">Lo que ofrece este lugar</h2>
+          <div class="amenities-grid">
+            @for (amenity of chalet.amenities; track amenity) {
+              <div class="amenity-detail-item">
+                <i class="fa-solid fa-check-circle text-primary"></i>
+                <span>{{ amenity }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- House Rules -->
+        @if (chalet.rules && chalet.rules.length > 0) {
+          <div class="detail-section">
+            <h2 class="section-subtitle">Normas de la casa y convivencia</h2>
+            <ul class="rules-list">
+              @for (rule of chalet.rules; track rule) {
+                <li><i class="fa-solid fa-circle-exclamation text-accent"></i> {{ rule }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <!-- RATINGS & REVIEWS SECTION -->
+        <div class="detail-section reviews-section glass-panel">
+          <div class="reviews-header">
+            <div class="big-rating-box">
+              <div class="big-rating-number">
+                <i class="fa-solid fa-star text-gold"></i>
+                <span>{{ chalet.rating.toFixed(1) }}</span>
+              </div>
+              <div class="big-rating-count">
+                Basado en <strong>{{ chalet.reviewsCount }}</strong> calificaciones de huéspedes
+              </div>
+            </div>
+
+            <!-- Rating Breakdown Bars -->
+            @if (chalet.ratingBreakdown) {
+              <div class="breakdown-grid">
+                <div class="breakdown-bar-item">
+                  <span class="bb-label">Limpieza</span>
+                  <div class="bb-bar"><div class="bb-fill" [style.width.%]="(chalet.ratingBreakdown.cleanliness / 5) * 100"></div></div>
+                  <span class="bb-val">{{ chalet.ratingBreakdown.cleanliness }}</span>
+                </div>
+                <div class="breakdown-bar-item">
+                  <span class="bb-label">Ubicación</span>
+                  <div class="bb-bar"><div class="bb-fill" [style.width.%]="(chalet.ratingBreakdown.location / 5) * 100"></div></div>
+                  <span class="bb-val">{{ chalet.ratingBreakdown.location }}</span>
+                </div>
+                <div class="breakdown-bar-item">
+                  <span class="bb-label">Comunicación</span>
+                  <div class="bb-bar"><div class="bb-fill" [style.width.%]="(chalet.ratingBreakdown.communication / 5) * 100"></div></div>
+                  <span class="bb-val">{{ chalet.ratingBreakdown.communication }}</span>
+                </div>
+                <div class="breakdown-bar-item">
+                  <span class="bb-label">Calidad-Precio</span>
+                  <div class="bb-bar"><div class="bb-fill" [style.width.%]="(chalet.ratingBreakdown.value / 5) * 100"></div></div>
+                  <span class="bb-val">{{ chalet.ratingBreakdown.value }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Existing Reviews List -->
+          <div class="reviews-list">
+            @if (chalet.reviews && chalet.reviews.length > 0) {
+              @for (rev of chalet.reviews; track rev._id) {
+                <div class="review-card">
+                  <div class="review-card-header">
+                    <img [src]="rev.authorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&q=80'" [alt]="rev.authorName" class="rev-avatar" />
+                    <div>
+                      <strong>{{ rev.authorName }}</strong>
+                      <span class="rev-date">{{ rev.date | date:'mediumDate' }}</span>
+                    </div>
+                    <div class="rev-stars">
+                      @for (star of [1,2,3,4,5]; track star) {
+                        <i class="fa-solid fa-star" [class.text-gold]="star <= rev.rating" [class.text-dim]="star > rev.rating"></i>
+                      }
+                    </div>
+                  </div>
+                  <p class="rev-comment">{{ rev.comment }}</p>
+                </div>
+              }
+            } @else {
+              <p class="no-reviews">Sé el primero en calificar y dejar una reseña para este chalet.</p>
+            }
+          </div>
+
+          <!-- Add Review Form (Persists to MongoDB) -->
+          <div class="new-review-box">
+            <h3><i class="fa-solid fa-pen-to-square"></i> Deja tu Calificación y Reseña</h3>
+            <p class="new-review-subtitle">Tu opinión ayuda a otros viajeros a elegir el mejor chalet en Guatemala.</p>
+
+            @if (reviewSuccessMessage) {
+              <div class="success-banner animate-fade">
+                <i class="fa-solid fa-circle-check"></i> {{ reviewSuccessMessage }}
+              </div>
+            }
+
+            <form (ngSubmit)="submitReview()" class="new-review-form">
+              <div class="form-row">
+                <div class="form-field flex-1">
+                  <label>Tu Nombre Completo</label>
+                  <input type="text" [(ngModel)]="newReviewAuthor" name="author" placeholder="Ej: Juan Carlos Pérez" required />
+                </div>
+
+                <div class="form-field">
+                  <label>Calificación General (Estrellas)</label>
+                  <div class="star-selector">
+                    @for (s of [1, 2, 3, 4, 5]; track s) {
+                      <button 
+                        type="button" 
+                        class="star-btn" 
+                        [class.active]="s <= newReviewRating" 
+                        (click)="newReviewRating = s">
+                        ★
+                      </button>
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <!-- Detailed ratings -->
+              <div class="criteria-row">
+                <div class="criteria-field">
+                  <label>Limpieza: {{ newReviewCleanliness }}★</label>
+                  <input type="range" min="1" max="5" [(ngModel)]="newReviewCleanliness" name="cleanliness" />
+                </div>
+                <div class="criteria-field">
+                  <label>Ubicación: {{ newReviewLocation }}★</label>
+                  <input type="range" min="1" max="5" [(ngModel)]="newReviewLocation" name="location" />
+                </div>
+                <div class="criteria-field">
+                  <label>Comunicación: {{ newReviewCommunication }}★</label>
+                  <input type="range" min="1" max="5" [(ngModel)]="newReviewCommunication" name="comm" />
+                </div>
+                <div class="criteria-field">
+                  <label>Calidad-Precio: {{ newReviewValue }}★</label>
+                  <input type="range" min="1" max="5" [(ngModel)]="newReviewValue" name="val" />
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Tu Experiencia y Comentarios</label>
+                <textarea 
+                  [(ngModel)]="newReviewComment" 
+                  name="comment" 
+                  rows="3" 
+                  placeholder="Cuéntanos cómo fue tu estadía, qué tal las instalaciones, la vista y la atención del anfitrión..."
+                  required>
+                </textarea>
+              </div>
+
+              <button type="submit" class="btn-primary" [disabled]="isReviewSubmitting">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>{{ isReviewSubmitting ? 'Guardando en MongoDB...' : 'Publicar Calificación' }}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Booking Widget -->
+      <div class="detail-right-col">
+        <div class="booking-widget glass-panel">
+          <div class="widget-price-header">
+            <div class="widget-price">
+              <span class="price-val">{{ chaletService.formatPrice(chalet.pricePerNight, chalet.priceUSD) }}</span>
+              <span class="price-unit">/ noche</span>
+            </div>
+            <div class="widget-rating">
+              <i class="fa-solid fa-star text-gold"></i>
+              <strong>{{ chalet.rating.toFixed(1) }}</strong>
+              <span>({{ chalet.reviewsCount }})</span>
+            </div>
+          </div>
+
+          @if (bookingSuccess) {
+            <div class="booking-success-card animate-fade">
+              <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+              <h3>¡Reserva Confirmada!</h3>
+              <p>Tu solicitud de reserva ha sido guardada en la base de datos de TropicStay. El anfitrión <strong>{{ chalet.host.name }}</strong> te contactará a <strong>{{ bookingPhone }}</strong>.</p>
+              <button class="btn-outline btn-sm" (click)="bookingSuccess = false">Hacer otra reserva</button>
+            </div>
+          } @else {
+            <!-- Booking Form -->
+            <form (ngSubmit)="submitBooking()" class="booking-form">
+              <div class="date-picker-grid">
+                <div class="date-field">
+                  <label>Llegada</label>
+                  <input type="date" [(ngModel)]="checkInDate" name="checkIn" required />
+                </div>
+                <div class="date-field">
+                  <label>Salida</label>
+                  <input type="date" [(ngModel)]="checkOutDate" name="checkOut" required />
+                </div>
+              </div>
+
+              <div class="form-field mt-1">
+                <label>Número de Huéspedes</label>
+                <select [(ngModel)]="bookingGuests" name="guestsCount">
+                  @for (n of [1,2,3,4,5,6,7,8,9,10]; track n) {
+                    @if (n <= chalet.guestsMax) {
+                      <option [value]="n">{{ n }} {{ n === 1 ? 'huésped' : 'huéspedes' }}</option>
+                    }
+                  }
+                </select>
+              </div>
+
+              <div class="form-field mt-1">
+                <label>Nombre del Huésped Principal</label>
+                <input type="text" [(ngModel)]="bookingName" name="guestName" placeholder="Tu nombre y apellido" required />
+              </div>
+
+              <div class="form-field mt-1">
+                <label>Correo Electrónico</label>
+                <input type="email" [(ngModel)]="bookingEmail" name="guestEmail" placeholder="correo@ejemplo.com" required />
+              </div>
+
+              <div class="form-field mt-1">
+                <label>Teléfono / WhatsApp (Guatemala)</label>
+                <input type="tel" [(ngModel)]="bookingPhone" name="guestPhone" placeholder="+502 5555-1234" required />
+              </div>
+
+              <!-- Price Breakdown -->
+              <div class="cost-summary">
+                <div class="summary-row">
+                  <span>{{ chaletService.formatPrice(chalet.pricePerNight, chalet.priceUSD) }} × {{ nightsCount }} {{ nightsCount === 1 ? 'noche' : 'noches' }}</span>
+                  <span>{{ chaletService.formatPrice(baseTotal) }}</span>
+                </div>
+                <div class="summary-row">
+                  <span>Tarifa de limpieza</span>
+                  <span>{{ chaletService.formatPrice(cleaningFee) }}</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row total-row">
+                  <strong>Total Estimado</strong>
+                  <strong class="total-amount">{{ chaletService.formatPrice(grandTotal) }}</strong>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-accent w-full btn-book" [disabled]="isBookingSubmitting">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>{{ isBookingSubmitting ? 'Confirmando...' : 'Reservar Chalet Ahora' }}</span>
+              </button>
+
+              <p class="booking-guarantee-note">
+                <i class="fa-solid fa-lock"></i> No se realizará ningún cobro inmediato. Pago directo con el anfitrión.
+              </p>
+            </form>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Comparison Modal -->
+  <app-comparison-modal></app-comparison-modal>
+</div>
+

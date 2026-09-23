@@ -1,0 +1,60 @@
+const mongoose = require('mongoose');
+
+const bookingSchema = new mongoose.Schema({
+  chalet: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Chalet',
+    required: true,
+  },
+  guestName: {
+    type: String,
+    required: [true, 'El nombre del huésped es obligatorio'],
+    trim: true,
+  },
+  guestEmail: {
+    type: String,
+    required: [true, 'El correo del huésped es obligatorio'],
+    trim: true,
+  },
+  guestPhone: {
+    type: String,
+    required: [true, 'El número de teléfono es obligatorio'],
+    trim: true,
+  },
+  checkIn: {
+    type: Date,
+    required: [true, 'La fecha de llegada es obligatoria'],
+  },
+  checkOut: {
+    type: Date,
+    required: [true, 'La fecha de salida es obligatoria'],
+  },
+  guestsCount: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 2,
+  },
+  nights: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+  totalPriceGTQ: {
+    type: Number,
+    required: true,
+  },
+  notes: {
+    type: String,
+    default: '',
+  },
+  status: {
+    type: String,
+    enum: ['confirmada', 'pendiente', 'cancelada'],
+    default: 'confirmada',
+  }
+}, {
+  timestamps: true,
+});
+
+module.exports = mongoose.model('Booking', bookingSchema);

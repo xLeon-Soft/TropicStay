@@ -1,0 +1,195 @@
+@if (comparisonService.isOpenModal()) {
+  <div class="comparison-backdrop animate-fade" (click)="close()">
+    <div class="comparison-modal-card glass-panel" (click)="$event.stopPropagation()">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-title-box">
+          <span class="badge badge-superhost">
+            <i class="fa-solid fa-scale-balanced"></i> Comparador Inteligente de Chalets
+          </span>
+          <h2>Comparativa Cara a Cara ({{ comparisonService.count() }}/{{ comparisonService.maxComparison }})</h2>
+          <p class="modal-subtitle">
+            Punto de partida para distancia: <strong>📍 {{ geoService.userLocation().name }}</strong>
+          </p>
+        </div>
+        <div class="modal-header-actions">
+          <button class="btn-clear-all" (click)="clear()">Vaciar todo</button>
+          <button class="btn-close-modal" (click)="close()">&times;</button>
+        </div>
+      </div>
+
+      <!-- Comparative Table Container -->
+      <div class="table-scroll-container">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th class="feature-col">Característica</th>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <th class="chalet-col">
+                  <div class="chalet-header-cell">
+                    <button class="remove-col-btn" (click)="remove(c._id)" title="Quitar de la comparación">&times;</button>
+                    <div class="col-img-wrapper">
+                      <img [src]="c.thumbnail || c.images[0]" [alt]="c.title" class="col-img" />
+                      <span class="col-category">{{ c.category }}</span>
+                    </div>
+                    <h4 class="col-title" [title]="c.title">{{ c.title }}</h4>
+                    <span class="col-location"><i class="fa-solid fa-location-dot"></i> {{ c.municipality }}, {{ c.department }}</span>
+
+                    <!-- Smart Verdict Badge -->
+                    <div class="verdict-slot">
+                      @if (verdicts.bestPriceId === c._id && verdicts.highestRatingId === c._id) {
+                        <span class="verdict-pill gold-badge"><i class="fa-solid fa-crown"></i> ¡La Joya Absoluta!</span>
+                      } @else if (verdicts.highestRatingId === c._id) {
+                        <span class="verdict-pill star-badge"><i class="fa-solid fa-star"></i> Mejor Calificado</span>
+                      } @else if (verdicts.bestPriceId === c._id) {
+                        <span class="verdict-pill price-badge"><i class="fa-solid fa-tag"></i> Mejor Tarifa</span>
+                      } @else if (verdicts.closestId === c._id) {
+                        <span class="verdict-pill dist-badge"><i class="fa-solid fa-location-arrow"></i> Más Cercano</span>
+                      } @else if (verdicts.bestValueId === c._id) {
+                        <span class="verdict-pill value-badge"><i class="fa-solid fa-award"></i> Gran Valor</span>
+                      }
+                    </div>
+
+                    <!-- Direct CTA -->
+                    <a [routerLink]="['/chalet', c._id]" (click)="close()" class="btn-primary col-cta-btn">
+                      Ver y Reservar
+                    </a>
+                  </div>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Precio por Noche -->
+            <tr class="highlight-row">
+              <td class="feature-label">
+                <i class="fa-solid fa-tags text-accent"></i> Precio por Noche
+              </td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val price-val-cell" [class.is-winner]="verdicts.bestPriceId === c._id">
+                  <span class="table-price">{{ chaletService.formatPrice(c.pricePerNight, c.priceUSD) }}</span>
+                  <span class="table-period">/ noche</span>
+                  @if (verdicts.bestPriceId === c._id) {
+                    <span class="winner-tag">¡Más económico!</span>
+                  }
+                </td>
+              }
+            </tr>
+
+            <!-- Distancia desde tu ubicación -->
+            <tr class="highlight-row">
+              <td class="feature-label">
+                <i class="fa-solid fa-route text-accent"></i> Distancia de Viaje
+              </td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val" [class.is-winner]="verdicts.closestId === c._id">
+                  <strong class="dist-number">{{ getDistance(c) }}</strong>
+                  @if (verdicts.closestId === c._id) {
+                    <span class="winner-tag">¡Ruta más corta!</span>
+                  }
+                </td>
+              }
+            </tr>
+
+            <!-- Calificación y Opiniones -->
+            <tr>
+              <td class="feature-label">
+                <i class="fa-solid fa-star text-gold"></i> Calificación
+              </td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val" [class.is-winner]="verdicts.highestRatingId === c._id">
+                  <span class="rating-cell">
+                    <i class="fa-solid fa-star text-gold"></i>
+                    <strong>{{ c.rating.toFixed(1) }}</strong>
+                    <span class="review-count-text">({{ c.reviewsCount }} opiniones)</span>
+                  </span>
+                </td>
+              }
+            </tr>
+
+            <!-- Capacidad Huéspedes -->
+            <tr>
+              <td class="feature-label">
+                <i class="fa-solid fa-user-group text-primary"></i> Capacidad
+              </td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val">
+                  <strong>{{ c.guestsMax }} huéspedes</strong>
+                  <span class="sub-spec">({{ c.bedrooms }} hab. • {{ c.beds }} camas)</span>
+                </td>
+              }
+            </tr>
+
+            <!-- Baños -->
+            <tr>
+              <td class="feature-label">
+                <i class="fa-solid fa-bath text-primary"></i> Baños
+              </td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val">
+                  {{ c.bathrooms }} baños completos
+                </td>
+              }
+            </tr>
+
+            <!-- Anfitrión -->
+            <tr>
+              <td class="feature-label">
+                <i class="fa-solid fa-user-check text-primary"></i> Anfitrión
+              </td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val">
+                  <div class="host-mini-info">
+                    <img [src]="c.host.avatar" [alt]="c.host.name" class="host-avatar-xs" />
+                    <div>
+                      <strong>{{ c.host.name }}</strong>
+                      @if (c.host.superhost) {
+                        <span class="badge badge-superhost badge-xs">Superanfitrión</span>
+                      }
+                    </div>
+                  </div>
+                </td>
+              }
+            </tr>
+
+            <!-- Desglose: Limpieza -->
+            <tr>
+              <td class="feature-label">Puntaje Limpieza</td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val">
+                  {{ c.ratingBreakdown?.cleanliness || 4.9 }} / 5.0
+                </td>
+              }
+            </tr>
+
+            <!-- Desglose: Ubicación -->
+            <tr>
+              <td class="feature-label">Puntaje Ubicación</td>
+              @for (c of comparisonService.comparedChalets(); track c._id) {
+                <td class="feature-val">
+                  {{ c.ratingBreakdown?.location || 4.9 }} / 5.0
+                </td>
+              }
+            </tr>
+
+            <!-- Amenidades Dinámicas -->
+            @for (amenity of keyAmenities; track amenity) {
+              <tr>
+                <td class="feature-label amenity-label-cell">{{ amenity }}</td>
+                @for (c of comparisonService.comparedChalets(); track c._id) {
+                  <td class="feature-val text-center">
+                    @if (hasAmenity(c, amenity)) {
+                      <span class="amenity-check"><i class="fa-solid fa-circle-check"></i> Sí</span>
+                    } @else {
+                      <span class="amenity-cross"><i class="fa-solid fa-circle-xmark"></i> No</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}

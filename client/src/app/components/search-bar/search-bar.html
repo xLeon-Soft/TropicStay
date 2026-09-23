@@ -1,0 +1,80 @@
+<div class="search-bar-wrapper glass-panel">
+  <form (ngSubmit)="onSearch()" class="search-bar-form">
+    <!-- Destination Field -->
+    <div class="search-field">
+      <div class="field-icon">
+        <i class="fa-solid fa-map-location-dot"></i>
+      </div>
+      <div class="field-content">
+        <label for="dest-input">Destino en Guatemala</label>
+        <input 
+          id="dest-input"
+          type="text" 
+          [(ngModel)]="destination" 
+          name="destination"
+          placeholder="¿A dónde quieres ir? Ej: Atitlán, Monterrico..." 
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <div class="field-divider"></div>
+
+    <!-- Category Field -->
+    <div class="search-field">
+      <div class="field-icon">
+        <i class="fa-solid fa-layer-group"></i>
+      </div>
+      <div class="field-content">
+        <label for="cat-select">Entorno / Tipo</label>
+        <select id="cat-select" [(ngModel)]="category" name="category">
+          <option value="Todas">Todos los entornos</option>
+          <option value="Lago">Lago (Atitlán)</option>
+          <option value="Playa">Playa (Monterrico / El Paredón)</option>
+          <option value="Montaña">Montaña & Cabañas (Tecpán)</option>
+          <option value="Colonial">Colonial (Antigua Guatemala)</option>
+          <option value="Río">Río (Río Dulce)</option>
+          <option value="Selva">Selva Tropical (Petén)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-divider"></div>
+
+    <!-- Guests Field -->
+    <div class="search-field">
+      <div class="field-icon">
+        <i class="fa-solid fa-user-group"></i>
+      </div>
+      <div class="field-content">
+        <label for="guests-select">Huéspedes</label>
+        <select id="guests-select" [(ngModel)]="guests" name="guests">
+          <option value="">Cualquier número</option>
+          <option value="2">2+ personas</option>
+          <option value="4">4+ personas</option>
+          <option value="6">6+ personas</option>
+          <option value="8">8+ personas</option>
+          <option value="10">10+ personas</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Search Button -->
+    <div class="search-action">
+      <button type="submit" class="btn-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <span>Buscar Chalets</span>
+      </button>
+    </div>
+  </form>
+
+  <!-- Popular Suggestions Quick Pills -->
+  <div class="quick-destinations">
+    <span class="quick-label">Destinos rápidos:</span>
+    @for (dest of popularDestinations; track dest.name) {
+      <button type="button" class="quick-pill" (click)="selectDestination(dest.name)">
+        <i class="fa-solid fa-location-dot"></i> {{ dest.name }}
+      </button>
+    }
+  </div>
+</div>

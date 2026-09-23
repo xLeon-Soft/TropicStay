@@ -1,0 +1,13 @@
+{
+  "name": "tropicstay",
+  "version": "1.0.0",
+  "description": "TropicStay - Plataforma de Alquiler de Chalets en Guatemala (Angular + Node.js + MongoDB)",
+  "scripts": {
+    "start:server": "cd server && node index.js",
+    "start:client": "cd client && ng serve --open",
+    "seed": "cd server && npm run seed"
+  },
+  "keywords": ["angular", "mongodb", "express", "chalets", "guatemala", "tropicstay"],
+  "author": "TropicStay",
+  "license": "ISC"
+}

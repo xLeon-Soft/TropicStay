@@ -1,0 +1,92 @@
+<div class="chalet-card glass-panel" [routerLink]="['/chalet', chalet._id]">
+  <!-- Image Box -->
+  <div class="card-media">
+    <img [src]="chalet.thumbnail || chalet.images[0]" [alt]="chalet.title" loading="lazy" class="card-img" />
+    
+    <!-- Badges on Image -->
+    <div class="card-top-badges">
+      <span class="badge badge-category">
+        <i class="fa-solid fa-mountain-sun"></i> {{ chalet.category }}
+      </span>
+
+      <div class="top-action-group">
+        <button class="action-circle-btn compare-pill-btn" [class.is-active]="isCompared" (click)="toggleCompare($event)" [title]="isCompared ? 'Quitar de comparador' : 'Agregar a comparador (hasta 4)'">
+          <i class="fa-solid fa-scale-balanced"></i>
+        </button>
+
+        <button class="action-circle-btn fav-btn" [class.is-active]="isFav" (click)="toggleFavorite($event)" aria-label="Favorito">
+          <i class="fa-solid fa-heart"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Rating Floating Pill -->
+    <div class="card-rating-pill">
+      <i class="fa-solid fa-star"></i>
+      <span class="rating-num">{{ chalet.rating.toFixed(1) }}</span>
+      <span class="rating-count">({{ chalet.reviewsCount }})</span>
+    </div>
+  </div>
+
+  <!-- Content Box -->
+  <div class="card-body">
+    <!-- Location & Distance -->
+    <div class="card-meta">
+      <div class="meta-location-group">
+        <span class="location-tag">
+          <i class="fa-solid fa-location-dot"></i> {{ chalet.municipality }}, {{ chalet.department }}
+        </span>
+        @if (distanceFormatted) {
+          <span class="distance-tag" title="Distancia desde tu punto de partida actual">
+            <i class="fa-solid fa-route"></i> a {{ distanceFormatted }}
+          </span>
+        }
+      </div>
+
+      @if (chalet.host) {
+        <div class="host-pill" title="Anfitrión: {{ chalet.host.name }}">
+          <img [src]="chalet.host.avatar" [alt]="chalet.host.name" class="host-thumb" />
+          @if (chalet.host.superhost) {
+            <span class="superhost-dot" title="Superanfitrión">★</span>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Title -->
+    <h3 class="card-title" [title]="chalet.title">{{ chalet.title }}</h3>
+
+    <!-- Specs (Capacidad, Dormitorios, Baños) -->
+    <div class="card-specs">
+      <span class="spec-item"><i class="fa-solid fa-user-group"></i> {{ chalet.guestsMax }} huéspedes</span>
+      <span class="spec-divider">•</span>
+      <span class="spec-item"><i class="fa-solid fa-bed"></i> {{ chalet.bedrooms }} hab.</span>
+      <span class="spec-divider">•</span>
+      <span class="spec-item"><i class="fa-solid fa-bath"></i> {{ chalet.bathrooms }} baños</span>
+    </div>
+
+    <!-- Top Amenity Highlights -->
+    @if (chalet.amenities && chalet.amenities.length > 0) {
+      <div class="amenity-chips">
+        @for (amenity of chalet.amenities.slice(0, 2); track amenity) {
+          <span class="amenity-chip">
+            <i class="fa-solid fa-check"></i> {{ amenity }}
+          </span>
+        }
+      </div>
+    }
+
+    <!-- Footer: Price & CTA -->
+    <div class="card-footer">
+      <div class="price-container">
+        <span class="price-amount">{{ formattedPrice }}</span>
+        <span class="price-period">/ noche</span>
+      </div>
+      
+      <span class="view-btn">
+        <span>Ver Chalet</span>
+        <i class="fa-solid fa-arrow-right"></i>
+      </span>
+    </div>
+  </div>
+</div>

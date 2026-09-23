@@ -1,0 +1,128 @@
+<div class="host-profile-page container">
+  @if (isLoading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando información del anfitrión...</p>
+    </div>
+  } @else if (host) {
+    <!-- Breadcrumbs -->
+    <div class="profile-breadcrumbs">
+      <a routerLink="/explore"><i class="fa-solid fa-arrow-left"></i> Volver al Catálogo</a>
+      <span class="bc-sep">/</span>
+      <span>Anfitriones de Guatemala</span>
+      <span class="bc-sep">/</span>
+      <span class="bc-current">{{ host.name }}</span>
+    </div>
+
+    <!-- Main Host Profile Card -->
+    <div class="host-header-card glass-panel">
+      <div class="host-header-left">
+        <div class="host-avatar-box">
+          <img [src]="host.avatar" [alt]="host.name" class="profile-avatar" />
+          @if (host.superhost) {
+            <span class="superhost-crown" title="Superanfitrión Verificado">
+              <i class="fa-solid fa-crown"></i>
+            </span>
+          }
+        </div>
+
+        <div class="profile-badges-row">
+          <span class="badge badge-verified"><i class="fa-solid fa-shield-check"></i> Identidad Verificada</span>
+          @if (host.superhost) {
+            <span class="badge badge-superhost"><i class="fa-solid fa-award"></i> Superanfitrión</span>
+          }
+        </div>
+
+        <div class="profile-meta-chips">
+          <div class="meta-chip">
+            <i class="fa-solid fa-star text-gold"></i>
+            <strong>{{ host.rating }}</strong>
+            <span>Calificación</span>
+          </div>
+          <div class="meta-chip">
+            <i class="fa-solid fa-comment-dots"></i>
+            <strong>{{ host.reviewsCount }}</strong>
+            <span>Evaluaciones</span>
+          </div>
+          <div class="meta-chip">
+            <i class="fa-solid fa-clock"></i>
+            <strong>{{ host.responseTime }}</strong>
+            <span>Tiempo de resp.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="host-header-right">
+        <h1 class="host-full-name">{{ host.name }}</h1>
+        <p class="host-location-text">
+          <i class="fa-solid fa-location-dot"></i> {{ host.location || 'Guatemala' }} • Anfitrión en TropicStay desde {{ host.memberSince }}
+        </p>
+
+        <div class="host-biography">
+          <h3>Sobre mí</h3>
+          <p>{{ host.bio }}</p>
+        </div>
+
+        <div class="host-contact-box">
+          <button class="btn-primary" (click)="showMessageModal = true">
+            <i class="fa-solid fa-envelope"></i> Contactar al Anfitrión
+          </button>
+          <span class="contact-hint">
+            <i class="fa-brands fa-whatsapp text-primary"></i> Tel: {{ host.phone || '+502 5555-0000' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chalets Managed By This Host -->
+    <div class="host-chalets-section">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Propiedades Disponibles</span>
+          <h2 class="section-title">Chalets gestionados por {{ host.name }} ({{ host.chaletsCount }})</h2>
+        </div>
+      </div>
+
+      <div class="chalets-grid">
+        @for (chalet of host.chalets; track chalet._id) {
+          <app-chalet-card [chalet]="chalet"></app-chalet-card>
+        }
+      </div>
+    </div>
+
+    <!-- Message Modal -->
+    @if (showMessageModal) {
+      <div class="modal-backdrop animate-fade">
+        <div class="modal-card glass-panel">
+          <div class="modal-header">
+            <h3>Enviar Mensaje a {{ host.name }}</h3>
+            <button class="close-modal-btn" (click)="showMessageModal = false">&times;</button>
+          </div>
+
+          @if (messageSent) {
+            <div class="modal-success animate-fade">
+              <i class="fa-solid fa-circle-check text-primary"></i>
+              <h4>¡Mensaje Enviado con Éxito!</h4>
+              <p>{{ host.name }} suele responder en {{ host.responseTime }}.</p>
+            </div>
+          } @else {
+            <form (ngSubmit)="sendMessage()" class="modal-body">
+              <p class="modal-desc">Escribe tus dudas sobre fechas, normas del chalet o detalles de estancia.</p>
+              <textarea 
+                [(ngModel)]="messageText" 
+                name="msg" 
+                rows="4" 
+                placeholder="Hola {{ host.name }}, tengo una consulta sobre el chalet..."
+                required>
+              </textarea>
+              <div class="modal-actions">
+                <button type="button" class="btn-outline" (click)="showMessageModal = false">Cancelar</button>
+                <button type="submit" class="btn-primary">Enviar Mensaje</button>
+              </div>
+            </form>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

@@ -1,0 +1,185 @@
+<div class="home-page">
+  <!-- HERO PRINCIPAL -->
+  <section class="hero-section">
+    <div class="hero-background-overlay"></div>
+    <div class="container hero-container">
+      <div class="hero-copy animate-fade">
+        <span class="hero-kicker">Escapadas seleccionadas en Guatemala</span>
+        <h1 class="hero-title">
+          Tu próximo chalet está en <em>Guatemala</em>
+        </h1>
+        <p class="hero-subtitle">
+          Casas junto al lago, refugios entre pinos y villas frente al Pacífico. Encuentra un lugar extraordinario para compartir.
+        </p>
+        <div class="hero-proof">
+          <div class="avatar-stack" aria-hidden="true">
+            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&q=80" alt="" />
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80" alt="" />
+            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&q=80" alt="" />
+          </div>
+          <div><strong>4.9 de 5</strong><span>por huéspedes verificados</span></div>
+        </div>
+      </div>
+      <div class="hero-search-container animate-fade">
+        <app-search-bar></app-search-bar>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLECCIONES QUE ENAMORAN / DESCUBRIMIENTO RÁPIDO -->
+  <section class="section collections-section">
+    <div class="container">
+      <div class="section-header center-text">
+        <span class="section-tag">Elige tu ambiente</span>
+        <h2 class="section-title">¿Qué se te antoja vivir?</h2>
+        <p class="section-desc">Filtra por el tipo de escapada, no por una lista interminable.</p>
+      </div>
+
+      <div class="mood-cards-grid">
+        @for (mood of moodCollections; track mood.label) {
+          <div class="mood-card glass-panel" (click)="filterByMood(mood)">
+            <div class="mood-top">
+              <span class="mood-emoji">{{ mood.emoji }}</span>
+              <span class="mood-badge">{{ mood.badge }}</span>
+            </div>
+            <h3 class="mood-label">{{ mood.label }}</h3>
+            <p class="mood-sub">{{ mood.subtitle }}</p>
+            <span class="mood-action">
+              <span>Explorar</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </span>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- DESTINOS MÁGICOS DE GUATEMALA -->
+  <section class="section destinations-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Rincones Mágicos</span>
+          <h2 class="section-title">Destinos Favoritos de Guatemala</h2>
+          <p class="section-desc">Chalets cuidadosamente seleccionados en cada rincón del país.</p>
+        </div>
+        <a routerLink="/explore" class="btn-outline">
+          <span>Ver catálogo completo</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+
+      <div class="destinations-grid">
+        @for (dest of destinations; track dest.name) {
+          <a [routerLink]="['/explore']" [queryParams]="{department: dest.department}" class="destination-card">
+            <img [src]="dest.img" [alt]="dest.name" class="dest-img" loading="lazy" />
+            <div class="dest-overlay"></div>
+            <div class="dest-info">
+              <span class="dest-badge">{{ dest.count }}</span>
+              <h3 class="dest-name">{{ dest.name }}</h3>
+              <p class="dest-tagline">{{ dest.tagline }}</p>
+            </div>
+          </a>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- CHALETS DESTACADOS -->
+  <section class="section chalets-section">
+    <div class="container">
+      <div class="section-header">
+        <div>
+          <span class="section-tag">Favoritos de Huéspedes</span>
+          <h2 class="section-title">Chalets con Mejores Calificaciones</h2>
+          <p class="section-desc">Espacios con vistas inigualables, piscinas y anfitriones de 5 estrellas.</p>
+        </div>
+        <a routerLink="/explore" class="btn-primary">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Explorar Todos</span>
+        </a>
+      </div>
+
+      @if (isLoading) {
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <p>Cargando chalets de Guatemala...</p>
+        </div>
+      } @else {
+        <div class="chalets-grid">
+          @for (chalet of featuredChalets; track chalet._id) {
+            <app-chalet-card [chalet]="chalet"></app-chalet-card>
+          }
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ANFITRIONES AMIGABLES / "EL QUE ALQUILA" -->
+  <section class="section hosts-spotlight-section">
+    <div class="container">
+      <div class="host-banner glass-panel">
+        <div class="host-banner-content">
+          <span class="badge badge-superhost">
+            <i class="fa-solid fa-hand-holding-heart"></i> Hospitalidad Chapina Genuina
+          </span>
+          <h2>Conoce a las personas que te abren sus puertas</h2>
+          <p>
+            En TropicStay tratas directamente con anfitriones apasionados por Guatemala. Te darán los mejores consejos de restaurantes, paseos en lancha y miradores secretos que no aparecen en las guías turísticas.
+          </p>
+
+          <div class="host-avatars-row">
+            <div class="host-avatar-card">
+              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&q=80" alt="Sofía Méndez" class="host-avatar-img" />
+              <div>
+                <strong>Sofía Méndez</strong>
+                <span>Atitlán • 4.98 ★</span>
+              </div>
+            </div>
+            <div class="host-avatar-card">
+              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80" alt="Carlos Valenzuela" class="host-avatar-img" />
+              <div>
+                <strong>Carlos Valenzuela</strong>
+                <span>Monterrico • 4.92 ★</span>
+              </div>
+            </div>
+            <div class="host-avatar-card">
+              <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&q=80" alt="Doña Elena Asturias" class="host-avatar-img" />
+              <div>
+                <strong>Doña Elena</strong>
+                <span>Antigua • 4.95 ★</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="host-banner-graphic">
+          <div class="graphic-card">
+            <i class="fa-solid fa-shield-heart graphic-icon"></i>
+            <span class="graphic-title">Tranquilidad Total</span>
+            <span class="graphic-text">Fotos reales, calificaciones verificadas y soporte directo con el anfitrión.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BANNER INVITACIÓN PARA PUBLICAR -->
+  <section class="section publish-cta-section">
+    <div class="container">
+      <div class="warm-cta-card">
+        <div class="warm-cta-text">
+          <span class="badge badge-verified"><i class="fa-solid fa-house-chimney-user"></i> Para Propietarios</span>
+          <h2>¿Tienes un chalet o cabaña en Guatemala?</h2>
+          <p>Únete a la familia de TropicStay. Publica gratis tu propiedad y conecta con viajeros respetuosos de todo el país.</p>
+        </div>
+        <div class="warm-cta-btn">
+          <a routerLink="/publish" class="btn-accent">
+            <i class="fa-solid fa-plus-circle"></i>
+            <span>Publicar mi Chalet</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

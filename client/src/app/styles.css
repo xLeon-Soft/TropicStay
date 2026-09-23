@@ -1,0 +1,285 @@
+/* ==========================================================================
+   TROPICSTAY - DISEÑO CÁLIDO, AMIGABLE Y ACOGEDOR (GUATEMALA LUXURY)
+   ========================================================================== */
+
+:root {
+  /* Paleta Cálida & Amigable inspirada en el Logo Oficial */
+  --primary: #0D5244;            /* Verde Esmeralda Tropical Profundo */
+  --primary-hover: #083E33;
+  --primary-light: #4E9B8F;      /* Turquesa Seafoam Suave */
+  --primary-glow: rgba(13, 82, 68, 0.15);
+
+  --accent: #D97736;             /* Terracota Cálido & Atardecer */
+  --accent-hover: #C26325;
+  --accent-light: #F4A261;
+  --accent-glow: rgba(217, 119, 54, 0.2);
+
+  --sand: #EFE7DA;               /* Arena Playa & Lino Natural */
+  --sand-light: #F7F3EC;
+  --gold: #F59E0B;               /* Miel & Estrellas Doradas */
+
+  /* Fondos Cálidos, Luminosos y Acogedores */
+  --bg-body: #FAF7F2;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-surface-glass: rgba(255, 255, 255, 0.88);
+  --bg-glass-card: rgba(255, 255, 255, 0.95);
+  --bg-input: #F4EFE6;
+
+  /* Bordes Suaves */
+  --border-subtle: rgba(13, 82, 68, 0.09);
+  --border-card: rgba(13, 82, 68, 0.11);
+  --border-focus: rgba(13, 82, 68, 0.4);
+
+  /* Tipografía & Textos (Alto Contraste y Calidez) */
+  --text-main: #142B23;          /* Verde Bosque Muy Oscuro (cálido, no negro plano) */
+  --text-muted: #536B60;         /* Tono terroso legible */
+  --text-dim: #82998E;
+  --text-inverse: #FFFFFF;
+
+  --font-heading: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Sombras Cálidas y Suaves */
+  --shadow-sm: 0 2px 10px rgba(20, 43, 35, 0.05);
+  --shadow-md: 0 10px 28px rgba(20, 43, 35, 0.08);
+  --shadow-lg: 0 20px 45px rgba(20, 43, 35, 0.12);
+  --shadow-warm: 0 12px 32px rgba(217, 119, 54, 0.14);
+
+  /* Radios Amigables y Redondeados */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Transiciones Fluidas */
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 8%, rgba(78, 155, 143, 0.09) 0%, transparent 45%),
+    radial-gradient(circle at 90% 40%, rgba(217, 119, 54, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 50% 90%, rgba(239, 231, 218, 0.6) 0%, transparent 50%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+}
+
+input, select, textarea {
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--primary-light);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(78, 155, 143, 0.2);
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* Botones con Calidez y Amabilidad */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--primary) 0%, #07352B 100%);
+  color: #FFFFFF;
+  padding: 0.85rem 1.75rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(13, 82, 68, 0.25);
+  transition: all var(--transition-fast);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(13, 82, 68, 0.35);
+  background: linear-gradient(135deg, #115D4D 0%, #0D5244 100%);
+}
+
+.btn-accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--accent) 0%, #B8581C 100%);
+  color: #FFFFFF;
+  padding: 0.85rem 1.75rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 18px var(--accent-glow);
+  transition: all var(--transition-fast);
+}
+
+.btn-accent:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(217, 119, 54, 0.35);
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #FFFFFF;
+  border: 1px solid var(--border-card);
+  color: var(--text-main);
+  padding: 0.85rem 1.75rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.btn-outline:hover {
+  background: var(--sand-light);
+  border-color: var(--primary-light);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Badges e Insignias Amigables */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.badge-superhost {
+  background: #FFF5EC;
+  color: var(--accent);
+  border: 1px solid rgba(217, 119, 54, 0.25);
+}
+
+.badge-verified {
+  background: #EBF7F5;
+  color: var(--primary);
+  border: 1px solid rgba(78, 155, 143, 0.3);
+}
+
+.badge-category {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text-main);
+  border: 1px solid rgba(20, 43, 35, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #FFFDF0;
+  color: #B45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+/* Paneles y Tarjetas Cálidas */
+.glass-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Animaciones Suaves */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-body);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5CBBF;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-light);
+}

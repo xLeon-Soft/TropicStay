@@ -1,0 +1,103 @@
+<footer class="footer">
+  <div class="container footer-top">
+    <!-- CTA Banner -->
+    <div class="footer-cta-card glass-panel">
+      <div class="cta-content">
+        <span class="badge badge-superhost">
+          <i class="fa-solid fa-crown"></i> Conviértete en Anfitrión
+        </span>
+        <h2>¿Tienes un chalet exclusivo en Guatemala?</h2>
+        <p>Genera ingresos adicionales publicando tu chalet frente al lago, playa o en la montaña con la comunidad más confiable del país.</p>
+      </div>
+      <div class="cta-action">
+        <a routerLink="/publish" class="btn-accent">
+          <i class="fa-solid fa-plus"></i> Publicar mi Chalet
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container footer-main">
+    <div class="footer-grid">
+      <!-- Col 1: Brand info -->
+      <div class="footer-col brand-col">
+        <div class="footer-brand">
+          <img src="logo.png" alt="TropicStay Guatemala" class="footer-logo-img" />
+        </div>
+        <p class="brand-desc">
+          La plataforma líder en Guatemala especializada en alquiler de chalets vacacionales de lujo: lagos volcánicos, playas del Pacífico, bosques nubosos y selvas mayas.
+        </p>
+        <div class="social-links">
+          <a href="#" class="social-icon" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a href="#" class="social-icon" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+        </div>
+      </div>
+
+      <!-- Col 2: Destinos de Guatemala -->
+      <div class="footer-col">
+        <h4 class="footer-heading">Destinos Populares</h4>
+        <ul class="footer-links">
+          <li><a routerLink="/explore" [queryParams]="{department: 'Sololá'}">Lago de Atitlán, Sololá</a></li>
+          <li><a routerLink="/explore" [queryParams]="{department: 'Santa Rosa'}">Playas de Monterrico</a></li>
+          <li><a routerLink="/explore" [queryParams]="{department: 'Sacatepéquez'}">Antigua Guatemala</a></li>
+          <li><a routerLink="/explore" [queryParams]="{department: 'Izabal'}">Río Dulce & Livingston</a></li>
+          <li><a routerLink="/explore" [queryParams]="{department: 'Chimaltenango'}">Cabañas en Tecpán</a></li>
+          <li><a routerLink="/explore" [queryParams]="{department: 'Petén'}">Selva de Flores & Tikal</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 3: Categorías -->
+      <div class="footer-col">
+        <h4 class="footer-heading">Tipos de Chalets</h4>
+        <ul class="footer-links">
+          <li><a routerLink="/explore" [queryParams]="{category: 'Lago'}">Chalets con Muelle & Lago</a></li>
+          <li><a routerLink="/explore" [queryParams]="{category: 'Playa'}">Chalets Frente al Mar</a></li>
+          <li><a routerLink="/explore" [queryParams]="{category: 'Montaña'}">Cabañas Alpinas con Chimenea</a></li>
+          <li><a routerLink="/explore" [queryParams]="{category: 'Colonial'}">Chalets Coloniales con Patio</a></li>
+          <li><a routerLink="/explore" [queryParams]="{category: 'Selva'}">Eco-Chalets en la Selva</a></li>
+        </ul>
+      </div>
+
+      <!-- Col 4: Confianza y Soporte -->
+      <div class="footer-col">
+        <h4 class="footer-heading">Confianza y Soporte</h4>
+        <ul class="footer-badges-list">
+          <li class="trust-item">
+            <i class="fa-solid fa-shield-halved"></i>
+            <div>
+              <strong>Anfitriones Verificados</strong>
+              <span>Validación de identidad en Guatemala</span>
+            </div>
+          </li>
+          <li class="trust-item">
+            <i class="fa-solid fa-star"></i>
+            <div>
+              <strong>Calificaciones Reales</strong>
+              <span>Reseñas 100% de huéspedes verificados</span>
+            </div>
+          </li>
+          <li class="trust-item">
+            <i class="fa-solid fa-headset"></i>
+            <div>
+              <strong>Asistencia Local 24/7</strong>
+              <span>Atención personalizada en español</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="footer-bottom">
+      <p>© {{ currentYear }} TropicStay Guatemala. Todos los derechos reservados. Desarrollado con pasión para el turismo guatemalteco.</p>
+      <div class="footer-bottom-links">
+        <a href="#">Privacidad</a>
+        <span>•</span>
+        <a href="#">Términos del Servicio</a>
+        <span>•</span>
+        <a href="#">Políticas de Cancelación</a>
+      </div>
+    </div>
+  </div>
+</footer>

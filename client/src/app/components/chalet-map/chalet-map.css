@@ -1,0 +1,282 @@
+.chalet-map-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-card);
+  box-shadow: var(--shadow-sm);
+  background: var(--sand);
+}
+
+.leaflet-map-host {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Floating map controls */
+.map-floating-controls {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 500;
+}
+
+.map-ctrl-btn {
+  background: #FFFFFF;
+  border: 1px solid var(--border-card);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: all var(--transition-fast);
+}
+
+.map-ctrl-btn:hover {
+  background: var(--sand-light);
+  transform: translateY(-2px);
+  color: var(--accent);
+}
+
+/* Custom Leaflet Pins (Estilo Airbnb con precio) */
+:host ::ng-deep .custom-chalet-pin {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .chalet-price-pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #FFFFFF;
+  border: 2px solid var(--primary);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 14px rgba(20, 43, 35, 0.25);
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+:host ::ng-deep .chalet-price-pin::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--primary);
+}
+
+:host ::ng-deep .chalet-price-pin:hover {
+  background: var(--primary);
+  color: #FFFFFF;
+  transform: scale(1.1);
+  z-index: 1000;
+}
+
+:host ::ng-deep .chalet-price-pin:hover::after {
+  border-top-color: var(--primary);
+}
+
+:host ::ng-deep .chalet-price-pin.pin-selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #FFFFFF;
+  transform: scale(1.12);
+  z-index: 1000;
+}
+
+:host ::ng-deep .chalet-price-pin.pin-selected::after {
+  border-top-color: var(--accent);
+}
+
+:host ::ng-deep .pin-category-icon {
+  font-size: 0.85rem;
+}
+
+/* User Location Pulse Marker */
+:host ::ng-deep .custom-user-marker {
+  background: transparent;
+  border: none;
+}
+
+:host ::ng-deep .user-pulse-marker {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:host ::ng-deep .pulse-ring {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.25);
+  animation: pulseAnimation 2s infinite;
+}
+
+:host ::ng-deep .pulse-dot {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2563EB;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulseAnimation {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* Leaflet Popup Styling */
+:host ::ng-deep .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(20, 43, 35, 0.2);
+  border: 1px solid var(--border-card);
+}
+
+:host ::ng-deep .leaflet-popup-content {
+  margin: 0;
+  width: 270px !important;
+  font-family: var(--font-body);
+}
+
+:host ::ng-deep .map-chalet-popup {
+  display: flex;
+  flex-direction: column;
+}
+
+:host ::ng-deep .popup-image-box {
+  position: relative;
+  width: 100%;
+  height: 130px;
+}
+
+:host ::ng-deep .popup-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+:host ::ng-deep .popup-rating {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #B45309;
+  font-weight: 800;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+:host ::ng-deep .popup-body {
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+:host ::ng-deep .popup-tag {
+  font-size: 0.72rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+:host ::ng-deep .popup-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:host ::ng-deep .popup-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
+}
+
+:host ::ng-deep .popup-distance {
+  color: var(--accent);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+:host ::ng-deep .popup-price strong {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+:host ::ng-deep .popup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+:host ::ng-deep .popup-btn-view {
+  background: var(--primary);
+  color: #fff !important;
+  text-align: center;
+  padding: 0.45rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-decoration: none;
+}
+
+:host ::ng-deep .popup-btn-route {
+  background: var(--sand-light);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main) !important;
+  text-align: center;
+  padding: 0.45rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+}
+
+:host ::ng-deep .popup-btn-route:hover {
+  background: var(--accent);
+  color: #fff !important;
+}

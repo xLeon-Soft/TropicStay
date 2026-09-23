@@ -1,0 +1,78 @@
+<header class="navbar-header">
+  <div class="container navbar-container">
+    <!-- Brand Logo -->
+    <a routerLink="/" class="navbar-brand" title="TropicStay Guatemala - Alquiler de Chalets">
+      <img src="logo.png" alt="TropicStay Guatemala Vacation Rentals" class="brand-logo-img" />
+    </a>
+
+    <!-- Desktop Navigation -->
+    <nav class="nav-links">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
+        <span>Inicio</span>
+      </a>
+      <a routerLink="/explore" routerLinkActive="active" class="nav-item">
+        <span>Explorar</span>
+      </a>
+      <a routerLink="/explore" [queryParams]="{category: 'Lago'}" class="nav-item">
+        <span>Atitlán</span>
+      </a>
+      <a routerLink="/explore" [queryParams]="{category: 'Playa'}" class="nav-item">
+        <span>Playas</span>
+      </a>
+    </nav>
+
+    <!-- Right Actions -->
+    <div class="navbar-actions">
+      <!-- Currency Switcher -->
+      <button class="currency-toggle" (click)="toggleCurrency()" title="Cambiar moneda">
+        <span class="currency-flag">🇬🇹</span>
+        <span class="currency-code">{{ chaletService.currency() }}</span>
+        <i class="fa-solid fa-arrows-rotate"></i>
+      </button>
+
+      <!-- Publish Chalet CTA -->
+      <a routerLink="/publish" class="btn-publish">
+        <i class="fa-solid fa-plus-circle"></i>
+        <span>Publicar Chalet</span>
+      </a>
+
+      <!-- Favorites link -->
+      <a routerLink="/explore" class="btn-favorites" title="Mis Chalets Favoritos">
+        <i class="fa-solid fa-heart"></i>
+        @if (chaletService.favorites().length > 0) {
+          <span class="fav-count">{{ chaletService.favorites().length }}</span>
+        }
+      </a>
+
+      <!-- Mobile Hamburger Button -->
+      <button class="menu-toggle" (click)="toggleMenu()" aria-label="Abrir menú">
+        <i class="fa-solid" [class.fa-bars]="!isMenuOpen" [class.fa-xmark]="isMenuOpen"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Dropdown Menu -->
+  @if (isMenuOpen) {
+    <div class="mobile-nav animate-fade">
+      <a routerLink="/" (click)="toggleMenu()" class="mobile-nav-item">
+        <i class="fa-solid fa-house"></i>
+        <span>Inicio</span>
+      </a>
+      <a routerLink="/explore" (click)="toggleMenu()" class="mobile-nav-item">
+        <i class="fa-solid fa-compass"></i>
+        <span>Explorar Chalets de Guatemala</span>
+      </a>
+      <a routerLink="/publish" (click)="toggleMenu()" class="mobile-nav-item publish-highlight">
+        <i class="fa-solid fa-plus-circle"></i>
+        <span>Publicar mi Chalet</span>
+      </a>
+      <div class="mobile-currency-row">
+        <span>Moneda activa:</span>
+        <button class="currency-toggle" (click)="toggleCurrency()">
+          <span>{{ chaletService.currency() }}</span>
+          <i class="fa-solid fa-arrows-rotate"></i>
+        </button>
+      </div>
+    </div>
+  }
+</header>

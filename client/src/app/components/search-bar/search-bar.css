@@ -1,0 +1,201 @@
+.search-bar-wrapper {
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(13, 82, 68, 0.12);
+  box-shadow: 0 16px 40px rgba(20, 43, 35, 0.12);
+  max-width: 1060px;
+  margin: 0 auto;
+}
+
+.search-bar-form {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #F8F5EE;
+  border: 1px solid rgba(13, 82, 68, 0.1);
+  border-radius: var(--radius-full);
+  padding: 0.6rem 0.85rem 0.6rem 1.6rem;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+}
+
+.field-icon {
+  color: var(--primary);
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+}
+
+.field-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.field-content label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.1rem;
+}
+
+.field-content input,
+.field-content select {
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  box-shadow: none;
+}
+
+.field-content input::placeholder {
+  color: var(--text-dim);
+  font-weight: 400;
+}
+
+.field-content select option {
+  background: #FFFFFF;
+  color: var(--text-main);
+}
+
+.field-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(13, 82, 68, 0.12);
+}
+
+.btn-search {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: linear-gradient(135deg, var(--primary) 0%, #083E33 100%);
+  color: #fff;
+  padding: 0.95rem 2rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 6px 18px rgba(13, 82, 68, 0.25);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-search:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 24px rgba(13, 82, 68, 0.35);
+  background: linear-gradient(135deg, #115D4D 0%, #0D5244 100%);
+}
+
+/* Quick destination pills */
+.quick-destinations {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-left: 0.5rem;
+}
+
+.quick-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.quick-pill {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+  background: #F4EFE6;
+  border: 1px solid rgba(13, 82, 68, 0.1);
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: all var(--transition-fast);
+}
+
+.quick-pill:hover {
+  color: var(--primary);
+  border-color: var(--primary-light);
+  background: #EFE5D5;
+  transform: translateY(-1px);
+}
+
+.quick-pill i {
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .search-bar-form {
+    flex-direction: column;
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    align-items: stretch;
+  }
+  .field-divider {
+    width: 100%;
+    height: 1px;
+  }
+  .btn-search {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* Compact booking surface */
+.search-bar-wrapper {
+  max-width: 1180px;
+  padding: .7rem;
+  border: 1px solid rgba(22, 51, 44, .08);
+  border-radius: 20px;
+  box-shadow: 0 22px 55px rgba(20, 51, 43, .15);
+}
+
+.search-bar-form {
+  gap: .25rem;
+  padding: .25rem .3rem .25rem 1.25rem;
+  border: 0;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.search-field { padding: .55rem .35rem; }
+.field-icon { color: var(--accent); }
+.field-content label { color: #18382f; letter-spacing: .02em; }
+.field-content input,
+.field-content select { font-size: .86rem; }
+.field-divider { background: rgba(22, 51, 44, .1); }
+
+.btn-search {
+  min-height: 54px;
+  padding: .9rem 1.55rem;
+  border-radius: 12px;
+  background: var(--primary);
+  box-shadow: none;
+}
+
+.quick-destinations { margin: .65rem .45rem .15rem; }
+.quick-pill {
+  padding: .3rem .68rem;
+  border: 0;
+  background: #f5f2ec;
+}
+
+@media (max-width: 860px) {
+  .search-bar-wrapper { padding: .6rem; }
+  .search-bar-form { padding: .65rem; border: 0; }
+  .search-field { padding: .5rem; }
+  .quick-destinations { display: none; }
+}

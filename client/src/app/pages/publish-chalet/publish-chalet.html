@@ -1,0 +1,177 @@
+<div class="publish-page container">
+  <div class="publish-header">
+    <span class="badge badge-superhost">
+      <i class="fa-solid fa-plus-circle"></i> Portal de Anfitriones
+    </span>
+    <h1>Publica tu Chalet en TropicStay Guatemala</h1>
+    <p>Completa los detalles de tu propiedad para comenzar a recibir solicitudes de huéspedes de todo el país.</p>
+  </div>
+
+  @if (publishSuccess) {
+    <div class="publish-success-panel glass-panel animate-fade">
+      <div class="success-icon-large">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h2>¡Tu Chalet fue Publicado con Éxito!</h2>
+      <p>La información ha sido guardada en la base de datos MongoDB y ya se encuentra visible en el catálogo de chalets de Guatemala.</p>
+      
+      <div class="success-actions">
+        <button class="btn-primary" (click)="viewPublishedChalet()">
+          <i class="fa-solid fa-eye"></i> Ver Mi Chalet Publicado
+        </button>
+        <button class="btn-outline" (click)="publishSuccess = false">
+          Publicar Otro Chalet
+        </button>
+      </div>
+    </div>
+  } @else {
+    <form (ngSubmit)="onSubmit()" class="publish-form glass-panel">
+      <!-- 1. Información General -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-house-laptop"></i> 1. Información General del Chalet</h3>
+        <div class="form-grid-2">
+          <div class="form-group full-width">
+            <label>Título Atractivo del Chalet *</label>
+            <input type="text" [(ngModel)]="title" name="title" placeholder="Ej: Chalet Vista Volcanes con Muelle Privado y Jacuzzi" required />
+          </div>
+
+          <div class="form-group">
+            <label>Tipo de Entorno *</label>
+            <select [(ngModel)]="category" name="category">
+              <option value="Lago">Lago (Atitlán, etc.)</option>
+              <option value="Playa">Playa (Monterrico, El Paredón)</option>
+              <option value="Montaña">Montaña / Cabaña (Tecpán)</option>
+              <option value="Colonial">Colonial (Antigua Guatemala)</option>
+              <option value="Río">Río (Río Dulce)</option>
+              <option value="Selva">Selva (Petén)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Departamento de Guatemala *</label>
+            <select [(ngModel)]="department" name="department">
+              @for (dept of departmentsList; track dept) {
+                <option [value]="dept">{{ dept }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Municipio o Aldea *</label>
+            <input type="text" [(ngModel)]="municipality" name="municipality" placeholder="Ej: San Marcos La Laguna" required />
+          </div>
+
+          <div class="form-group">
+            <label>Ubicación Descriptiva *</label>
+            <input type="text" [(ngModel)]="locationName" name="locationName" placeholder="Ej: Orilla del Lago de Atitlán, Sololá" required />
+          </div>
+
+          <div class="form-group full-width">
+            <label>Descripción Detallada *</label>
+            <textarea [(ngModel)]="description" name="description" rows="4" placeholder="Describe los espacios, la vista panorámica, áreas exteriores, cocina, etc..." required></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Capacidad y Distribución -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-bed"></i> 2. Capacidad y Distribución</h3>
+        <div class="form-grid-4">
+          <div class="form-group">
+            <label>Máx. Huéspedes</label>
+            <input type="number" min="1" [(ngModel)]="guestsMax" name="guestsMax" required />
+          </div>
+          <div class="form-group">
+            <label>Dormitorios</label>
+            <input type="number" min="1" [(ngModel)]="bedrooms" name="bedrooms" required />
+          </div>
+          <div class="form-group">
+            <label>Camas Totales</label>
+            <input type="number" min="1" [(ngModel)]="beds" name="beds" required />
+          </div>
+          <div class="form-group">
+            <label>Baños</label>
+            <input type="number" min="1" [(ngModel)]="bathrooms" name="bathrooms" required />
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Precios y Tarifas -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-tags"></i> 3. Tarifas y Depósito</h3>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label>Precio por Noche (Quetzales Q) *</label>
+            <input type="number" min="100" [(ngModel)]="pricePerNight" name="pricePerNight" required />
+            <span class="input-hint">Aprox. ${{ (pricePerNight / 7.78).toFixed(0) }} USD</span>
+          </div>
+          <div class="form-group">
+            <label>Tarifa de Limpieza (Q)</label>
+            <input type="number" min="0" [(ngModel)]="cleaningFee" name="cleaningFee" />
+          </div>
+          <div class="form-group">
+            <label>Depósito Reembolsable (Q)</label>
+            <input type="number" min="0" [(ngModel)]="deposit" name="deposit" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Fotos e Imágenes -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-camera"></i> 4. Fotografías del Chalet</h3>
+        <div class="form-group">
+          <label>URL de Foto Principal (Portada) *</label>
+          <input type="url" [(ngModel)]="mainImageUrl" name="mainImageUrl" placeholder="https://..." required />
+        </div>
+        <div class="form-group mt-1">
+          <label>URLs de Fotos Adicionales (Una por línea)</label>
+          <textarea [(ngModel)]="additionalImages" name="additionalImages" rows="3" placeholder="https://imagen2.jpg&#10;https://imagen3.jpg"></textarea>
+        </div>
+      </div>
+
+      <!-- 5. Amenidades -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-sparkles"></i> 5. Amenidades Destacadas</h3>
+        <div class="amenities-selection-grid">
+          @for (amenity of allAmenities; track amenity) {
+            <button 
+              type="button" 
+              class="amenity-select-btn" 
+              [class.selected]="selectedAmenities.includes(amenity)" 
+              (click)="toggleAmenity(amenity)">
+              <i class="fa-solid" [class.fa-check]="selectedAmenities.includes(amenity)" [class.fa-plus]="!selectedAmenities.includes(amenity)"></i>
+              <span>{{ amenity }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- 6. Normas de la Casa -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-clipboard-list"></i> 6. Normas y Reglas</h3>
+        <div class="rules-editor">
+          <div class="add-rule-row">
+            <input type="text" [(ngModel)]="newRule" name="newRule" placeholder="Ej: No encender fogatas fuera del área designada" (keyup.enter)="addRule()" />
+            <button type="button" class="btn-outline btn-sm" (click)="addRule()">Agregar Regla</button>
+          </div>
+          <div class="rules-chips">
+            @for (r of rulesList; track r; let i = $index) {
+              <span class="rule-chip">
+                {{ r }}
+                <button type="button" (click)="removeRule(i)" title="Eliminar">&times;</button>
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit CTA -->
+      <div class="form-submit-row">
+        <button type="submit" class="btn-primary btn-lg" [disabled]="isSubmitting">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>{{ isSubmitting ? 'Guardando en MongoDB...' : 'Guardar y Publicar mi Chalet' }}</span>
+        </button>
+      </div>
+    </form>
+  }
+</div>

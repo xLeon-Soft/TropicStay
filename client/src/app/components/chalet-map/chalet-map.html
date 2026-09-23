@@ -1,0 +1,9 @@
+<div class="chalet-map-wrapper" [style.height]="height">
+  <div #mapContainer class="leaflet-map-host"></div>
+  
+  <div class="map-floating-controls">
+    <button class="map-ctrl-btn" (click)="recenter()" title="Reencuadrar todos los chalets">
+      <i class="fa-solid fa-expand"></i> Ver toda Guatemala
+    </button>
+  </div>
+</div>
