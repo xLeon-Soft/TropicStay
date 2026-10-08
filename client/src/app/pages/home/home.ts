@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ChaletService } from '../../services/chalet.service';
-import { Chalet } from '../../models/chalet.model';
+import { Chalet, Host } from '../../models/chalet.model';
 import { SearchBarComponent } from '../../components/search-bar/search-bar';
 import { ChaletCardComponent } from '../../components/chalet-card/chalet-card';
 
@@ -17,6 +17,7 @@ export class HomeComponent implements OnInit {
   private router = inject(Router);
   chaletService = inject(ChaletService);
   featuredChalets: Chalet[] = [];
+  featuredHosts: Host[] = [];
   isLoading = true;
 
   moodCollections = [
@@ -117,6 +118,7 @@ export class HomeComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadChalets();
+    this.loadHosts();
   }
 
   loadChalets(): void {
@@ -129,6 +131,17 @@ export class HomeComponent implements OnInit {
       error: (err) => {
         console.error('Error cargando chalets:', err);
         this.isLoading = false;
+      }
+    });
+  }
+
+  loadHosts(): void {
+    this.chaletService.getHosts().subscribe({
+      next: (hosts) => {
+        this.featuredHosts = hosts.slice(0, 3);
+      },
+      error: (err) => {
+        console.error('Error cargando anfitriones:', err);
       }
     });
   }

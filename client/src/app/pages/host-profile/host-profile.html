@@ -65,11 +65,11 @@
 
         <div class="host-contact-box">
           <button class="btn-primary" (click)="showMessageModal = true">
-            <i class="fa-solid fa-envelope"></i> Contactar al Anfitrión
+            <i class="fa-solid fa-envelope"></i> Enviar Mensaje
           </button>
-          <span class="contact-hint">
-            <i class="fa-brands fa-whatsapp text-primary"></i> Tel: {{ host.phone || '+502 5555-0000' }}
-          </span>
+          <a [href]="getWhatsAppLink()" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Chatear por WhatsApp">
+            <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp ({{ host.phone || '+502 5555-0000' }})
+          </a>
         </div>
       </div>
     </div>
@@ -117,7 +117,7 @@
               </textarea>
               <div class="modal-actions">
                 <button type="button" class="btn-outline" (click)="showMessageModal = false">Cancelar</button>
-                <button type="submit" class="btn-primary">Enviar Mensaje</button>
+                <button type="submit" class="btn-primary">Continuar en WhatsApp</button>
               </div>
             </form>
           }

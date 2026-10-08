@@ -9,6 +9,7 @@ import { ComparisonService } from '../../services/comparison.service';
 import { ComparisonModalComponent } from '../../components/comparison-modal/comparison-modal';
 import { Chalet, Review } from '../../models/chalet.model';
 import { ChaletMapComponent } from '../../components/chalet-map/chalet-map';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-chalet-detail',
@@ -23,6 +24,7 @@ export class ChaletDetailComponent implements OnInit {
   bookingService = inject(BookingService);
   geoService = inject(GeolocationService);
   compareService = inject(ComparisonService);
+  auth = inject(AuthService);
 
   chalet: Chalet | null = null;
   isLoading = true;
@@ -38,6 +40,7 @@ export class ChaletDetailComponent implements OnInit {
   bookingNotes: string = '';
   isBookingSubmitting = false;
   bookingSuccess = false;
+  bookingError = '';
 
   // New Review Form State
   newReviewAuthor: string = '';
@@ -49,6 +52,7 @@ export class ChaletDetailComponent implements OnInit {
   newReviewComment: string = '';
   isReviewSubmitting = false;
   reviewSuccessMessage = '';
+  reviewError = '';
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -56,6 +60,7 @@ export class ChaletDetailComponent implements OnInit {
       this.loadChalet(id);
     }
     this.initDefaultDates();
+    this.prefillAuthenticatedUser();
   }
 
   initDefaultDates(): void {
@@ -65,6 +70,18 @@ export class ChaletDetailComponent implements OnInit {
 
     this.checkInDate = today.toISOString().split('T')[0];
     this.checkOutDate = tomorrow.toISOString().split('T')[0];
+  }
+
+  get minBookingDate(): string {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  private prefillAuthenticatedUser(): void {
+    const user = this.auth.user();
+    if (!user) return;
+    this.bookingName = user.name;
+    this.bookingEmail = user.email;
+    this.newReviewAuthor = user.name;
   }
 
   loadChalet(id: string): void {
@@ -137,9 +154,30 @@ export class ChaletDetailComponent implements OnInit {
     return this.geoService.getGoogleMapsDirectionsUrl(this.chalet.coordinates.lat, this.chalet.coordinates.lng);
   }
 
+  get hostWhatsAppUrl(): string {
+    if (!this.chalet?.host) return '#';
+    const cleanPhone = (this.chalet.host.phone || '+50255550000').replace(/[^0-9]/g, '');
+    const text = encodeURIComponent(`Hola ${this.chalet.host.name}, te escribo desde TropicStay Guatemala sobre tu chalet "${this.chalet.title}". ¿Podrías darme más información?`);
+    return `https://wa.me/${cleanPhone}?text=${text}`;
+  }
+
   submitBooking(): void {
+    this.bookingError = '';
     if (!this.chalet || !this.bookingName || !this.bookingEmail || !this.bookingPhone) {
-      alert('Por favor completa todos tus datos personales para confirmar la reserva.');
+      this.bookingError = 'Completa tu nombre, correo y teléfono para continuar.';
+      return;
+    }
+
+    const checkIn = new Date(`${this.checkInDate}T00:00:00`);
+    const checkOut = new Date(`${this.checkOutDate}T00:00:00`);
+    const today = new Date(`${this.minBookingDate}T00:00:00`);
+    if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime()) || checkIn < today || checkOut <= checkIn) {
+      this.bookingError = 'Selecciona una llegada desde hoy y una salida posterior a la llegada.';
+      return;
+    }
+
+    if (this.bookingGuests < 1 || this.bookingGuests > this.chalet.guestsMax) {
+      this.bookingError = `Este chalet admite hasta ${this.chalet.guestsMax} huéspedes.`;
       return;
     }
 
@@ -161,12 +199,13 @@ export class ChaletDetailComponent implements OnInit {
       error: (err) => {
         console.error('Error enviando reserva:', err);
         this.isBookingSubmitting = false;
-        alert('Hubo un error al procesar la reserva. Intenta de nuevo.');
+        this.bookingError = err?.error?.message || 'No pudimos procesar la reserva. Inténtalo de nuevo.';
       }
     });
   }
 
   submitReview(): void {
+    this.reviewError = '';
     if (!this.chalet || !this.newReviewAuthor.trim() || !this.newReviewComment.trim()) {
       alert('Por favor escribe tu nombre y un comentario para publicar tu calificación.');
       return;

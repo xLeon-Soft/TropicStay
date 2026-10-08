@@ -27,8 +27,17 @@ export class SearchBarComponent {
     { name: 'Flores / Tikal', dept: 'Petén' },
   ];
 
-  selectDestination(name: string) {
-    this.destination = name;
+  selectDestination(dest: { name: string; dept: string }) {
+    this.destination = dest.name;
+    const queryParams: any = {
+      search: dest.name,
+      department: dest.dept
+    };
+    if (this.category !== 'Todas') queryParams.category = this.category;
+    if (this.guests) queryParams.guests = this.guests;
+
+    this.searchSubmitted.emit(queryParams);
+    this.router.navigate(['/explore'], { queryParams });
   }
 
   onSearch() {

@@ -48,6 +48,7 @@ export class ExploreComponent implements OnInit {
   minRating: number | null = null;
   selectedSort = 'recommended';
   selectedAmenities: string[] = [];
+  showFavoritesOnly = false;
 
   // Filter options
   departments: string[] = [
@@ -81,11 +82,15 @@ export class ExploreComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      if (params['search']) this.searchTerm = params['search'];
-      if (params['department']) this.selectedDepartment = params['department'];
-      if (params['category']) this.selectedCategory = params['category'];
-      if (params['guests']) this.selectedGuests = params['guests'];
-      if (params['minRating']) this.minRating = Number(params['minRating']);
+      this.searchTerm = params['search'] || '';
+      this.selectedDepartment = params['department'] || 'Todos';
+      this.selectedCategory = params['category'] || 'Todas';
+      this.selectedGuests = params['guests'] || '';
+      this.minRating = params['minRating'] ? Number(params['minRating']) : null;
+      this.selectedAmenities = params['amenities']
+        ? String(params['amenities']).split(',').filter(Boolean)
+        : [];
+      this.showFavoritesOnly = params['favorites'] === 'true';
 
       this.applyFilters();
     });
@@ -98,6 +103,17 @@ export class ExploreComponent implements OnInit {
       this.selectedAmenities.push(amenity);
     }
     this.applyFilters();
+  }
+
+  toggleFavoritesFilter(): void {
+    this.showFavoritesOnly = !this.showFavoritesOnly;
+    const queryParams: any = { ...this.route.snapshot.queryParams };
+    if (this.showFavoritesOnly) {
+      queryParams['favorites'] = 'true';
+    } else {
+      delete queryParams['favorites'];
+    }
+    this.router.navigate([], { relativeTo: this.route, queryParams });
   }
 
   applyFilters(): void {
@@ -118,7 +134,12 @@ export class ExploreComponent implements OnInit {
 
     this.filtersRequest = this.chaletService.getChalets(params).pipe(timeout(12000)).subscribe({
       next: (chalets) => {
-        this.chalets = chalets;
+        let list = chalets;
+        if (this.showFavoritesOnly) {
+          const favs = this.chaletService.favorites();
+          list = list.filter(c => favs.includes(c._id));
+        }
+        this.chalets = list;
         if (this.selectedSort === 'dist-asc') {
           this.sortChaletsByDistance();
         }
@@ -185,8 +206,8 @@ export class ExploreComponent implements OnInit {
     this.minRating = null;
     this.selectedSort = 'recommended';
     this.selectedAmenities = [];
+    this.showFavoritesOnly = false;
     this.router.navigate(['/explore']);
-    this.applyFilters();
   }
 
   get activeFiltersCount(): number {
@@ -197,6 +218,7 @@ export class ExploreComponent implements OnInit {
     if (this.selectedGuests) count++;
     if (this.minRating) count++;
     if (this.selectedAmenities.length > 0) count += this.selectedAmenities.length;
+    if (this.showFavoritesOnly) count++;
     return count;
   }
 }

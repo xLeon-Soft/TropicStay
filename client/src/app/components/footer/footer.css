@@ -173,8 +173,149 @@
   gap: 0.75rem;
 }
 
-.footer-bottom-links a:hover {
+.policy-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.policy-link-btn:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* Modal de Políticas */
+.policy-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 43, 35, 0.55);
+  backdrop-filter: blur(6px);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.policy-modal-card {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.policy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: #FAF7F2;
+  gap: 1rem;
+}
+
+.policy-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+.policy-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid var(--border-subtle);
+  background: #FFFFFF;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.policy-tab:hover {
+  color: var(--primary);
+  border-color: var(--primary-light);
+}
+
+.policy-tab.active {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+}
+
+.policy-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+}
+
+.policy-close-btn:hover {
+  color: var(--accent);
+}
+
+.policy-modal-body {
+  padding: 1.75rem;
+  overflow-y: auto;
+  line-height: 1.65;
   color: var(--text-main);
+}
+
+.policy-content h3 {
+  font-size: 1.35rem;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.policy-intro {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.policy-content h4 {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-top: 1.25rem;
+  margin-bottom: 0.35rem;
+}
+
+.policy-content p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.policy-modal-footer {
+  padding: 1rem 1.75rem;
+  border-top: 1px solid var(--border-subtle);
+  background: #FAF7F2;
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media (max-width: 992px) {

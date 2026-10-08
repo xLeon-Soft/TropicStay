@@ -1,0 +1,81 @@
+:host {
+  display: block;
+  min-height: 100vh;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.25rem;
+  background:
+    linear-gradient(135deg, rgba(4, 57, 47, .88), rgba(10, 90, 72, .72)),
+    url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2000&q=85') center / cover;
+}
+
+.login-card {
+  width: min(100%, 470px);
+  padding: 3rem clamp(1.5rem, 6vw, 3.5rem);
+  text-align: center;
+  background: rgba(255, 255, 255, .96);
+  border: 1px solid rgba(255, 255, 255, .7);
+  border-radius: 24px;
+  box-shadow: 0 24px 80px rgba(0, 30, 24, .35);
+}
+
+.login-logo {
+  width: 180px;
+  height: 76px;
+  object-fit: contain;
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  color: var(--accent, #d97736);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+h1 {
+  margin: .7rem 0 1rem;
+  color: var(--primary, #0d5244);
+  font-family: 'Manrope', sans-serif;
+  font-size: clamp(1.7rem, 5vw, 2.25rem);
+  line-height: 1.2;
+}
+
+p {
+  margin: 0 auto 1.75rem;
+  color: var(--text-muted, #667085);
+  font-size: .95rem;
+  line-height: 1.65;
+}
+
+.google-button {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.loading-text {
+  display: block;
+  margin-top: .85rem;
+  color: var(--text-muted, #667085);
+  font-size: .85rem;
+}
+
+.login-error {
+  margin: 1rem 0 0;
+  color: #b42318;
+  font-size: .84rem;
+  line-height: 1.45;
+}
+
+small {
+  display: block;
+  margin-top: 1.8rem;
+  color: #98a2b3;
+  font-size: .72rem;
+  line-height: 1.45;
+}

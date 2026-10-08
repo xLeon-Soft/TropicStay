@@ -171,6 +171,16 @@
   align-items: center;
 }
 
+.clickable-host-pill {
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+  z-index: 2;
+}
+
+.clickable-host-pill:hover {
+  transform: scale(1.18);
+}
+
 .host-thumb {
   width: 30px;
   height: 30px;

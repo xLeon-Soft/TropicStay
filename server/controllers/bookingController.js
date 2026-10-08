@@ -11,10 +11,23 @@ exports.createBooking = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Chalet no encontrado' });
     }
 
-    const start = new Date(checkIn);
-    const end = new Date(checkOut);
-    const diffTime = Math.abs(end - start);
-    const nights = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+    const start = new Date(`${checkIn}T00:00:00`);
+    const end = new Date(`${checkOut}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!guestName?.trim() || !guestEmail?.trim() || !guestPhone?.trim()) {
+      return res.status(400).json({ success: false, message: 'Nombre, correo y teléfono son obligatorios.' });
+    }
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start < today || end <= start) {
+      return res.status(400).json({ success: false, message: 'Las fechas de reserva no son válidas.' });
+    }
+    if (!Number.isInteger(Number(guestsCount)) || Number(guestsCount) < 1 || Number(guestsCount) > chalet.guestsMax) {
+      return res.status(400).json({ success: false, message: `El chalet admite de 1 a ${chalet.guestsMax} huéspedes.` });
+    }
+
+    const diffTime = end.getTime() - start.getTime();
+    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const totalPriceGTQ = (nights * chalet.pricePerNight) + (chalet.cleaningFee || 150);
 
     const booking = await Booking.create({

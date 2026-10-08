@@ -32,6 +32,70 @@
   box-shadow: var(--shadow-sm);
 }
 
+.local-upload-group input[type='file'] {
+  padding: .65rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.local-images-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: .75rem;
+  margin-top: 1rem;
+}
+
+.local-image-item {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--sand-light);
+}
+
+.local-image-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.local-image-item figcaption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  padding: .2rem .45rem;
+  border-radius: 0 8px 0 0;
+  background: var(--primary);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 700;
+}
+
+.local-image-item button {
+  position: absolute;
+  top: .35rem;
+  right: .35rem;
+  width: 25px;
+  height: 25px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.form-error {
+  display: flex;
+  gap: .45rem;
+  align-items: center;
+  margin: .6rem 0 0;
+  color: #b42318;
+  font-size: .85rem;
+}
+
 .form-section {
   display: flex;
   flex-direction: column;

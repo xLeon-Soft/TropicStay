@@ -82,6 +82,12 @@ export class ChaletService {
     return this.http.post<{ success: boolean; data: Chalet }>(`${this.apiUrl}/chalets`, chaletData);
   }
 
+  uploadImages(files: File[]): Observable<{ success: boolean; urls: string[] }> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('images', file));
+    return this.http.post<{ success: boolean; urls: string[] }>(`${this.apiUrl}/uploads/images`, formData);
+  }
+
   addReview(chaletId: string, review: Partial<Review>): Observable<any> {
     return this.http.post(`${this.apiUrl}/chalets/${chaletId}/reviews`, review);
   }
@@ -93,6 +99,11 @@ export class ChaletService {
 
   getHostById(hostId: string): Observable<Host & { chalets: Chalet[]; chaletsCount: number }> {
     return this.http.get<{ success: boolean; data: Host & { chalets: Chalet[]; chaletsCount: number } }>(`${this.apiUrl}/hosts/${hostId}`)
+      .pipe(map(res => res.data));
+  }
+
+  getHosts(): Observable<Host[]> {
+    return this.http.get<{ success: boolean; data: Host[] }>(`${this.apiUrl}/hosts`)
       .pipe(map(res => res.data));
   }
 }

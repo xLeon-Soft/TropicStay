@@ -47,13 +47,23 @@ export class HostProfileComponent implements OnInit {
   }
 
   sendMessage(): void {
-    if (this.messageText.trim()) {
-      this.messageSent = true;
-      setTimeout(() => {
-        this.showMessageModal = false;
-        this.messageSent = false;
-        this.messageText = '';
-      }, 2500);
-    }
+    if (!this.host || !this.messageText.trim()) return;
+
+    const cleanPhone = (this.host.phone || '+50255550000').replace(/[^0-9]/g, '');
+    const text = encodeURIComponent(`Hola ${this.host.name}, te escribo desde TropicStay Guatemala. ${this.messageText.trim()}`);
+    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank', 'noopener');
+    this.messageSent = true;
+    setTimeout(() => {
+      this.showMessageModal = false;
+      this.messageSent = false;
+      this.messageText = '';
+    }, 2500);
+  }
+
+  getWhatsAppLink(): string {
+    if (!this.host) return '#';
+    const cleanPhone = (this.host.phone || '+50255550000').replace(/[^0-9]/g, '');
+    const text = encodeURIComponent(`Hola ${this.host.name}, vi tus chalets en TropicStay Guatemala y me gustaría consultar disponibilidad.`);
+    return `https://wa.me/${cleanPhone}?text=${text}`;
   }
 }

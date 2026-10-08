@@ -9,7 +9,8 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
-  inject
+  inject,
+  effect
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
@@ -37,10 +38,34 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private map: L.Map | null = null;
   private markersLayer: L.LayerGroup = L.layerGroup();
+  private routeLayer: L.LayerGroup = L.layerGroup();
   private userMarker: L.Marker | null = null;
+  private currentRouteBounds: L.LatLngBounds | null = null;
+
+  activeRouteInfo: {
+    chaletTitle: string;
+    distanceKm: string;
+    durationFormatted: string;
+    originName: string;
+  } | null = null;
+
+  isLoadingRoute: boolean = false;
 
   chaletService = inject(ChaletService);
   geoService = inject(GeolocationService);
+
+  constructor() {
+    effect(() => {
+      // Reaccionar cuando cambie la ubicación de partida del usuario (GPS o Ciudad)
+      const _ = this.geoService.userLocation();
+      if (this.map && this.showUserLocation) {
+        this.renderUserLocationMarker();
+        if (this.selectedChalet) {
+          this.drawRoute(this.selectedChalet);
+        }
+      }
+    });
+  }
 
   ngAfterViewInit(): void {
     this.initMap();
@@ -51,8 +76,13 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (changes['chalets']) {
         this.renderMarkers();
       }
-      if (changes['selectedChalet'] && this.selectedChalet) {
-        this.focusChalet(this.selectedChalet);
+      if (changes['selectedChalet']) {
+        if (this.selectedChalet) {
+          this.focusChalet(this.selectedChalet);
+          this.drawRoute(this.selectedChalet);
+        } else {
+          this.clearRoute();
+        }
       }
     }
   }
@@ -80,13 +110,13 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     // Controles de zoom elegantes en la esquina superior derecha
     L.control.zoom({ position: 'topright' }).addTo(this.map);
 
-    // CartoDB Voyager tiles (Moderno, cálido y de alta legibilidad)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://carto.com/">CartoDB</a> &copy; OpenStreetMap',
+    // OpenStreetMap tiles (100% gratuito, público y sin requerir API key)
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
-      subdomains: 'abcd',
     }).addTo(this.map);
 
+    this.routeLayer.addTo(this.map);
     this.markersLayer.addTo(this.map);
 
     // Pintar posición del usuario
@@ -96,6 +126,11 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     // Pintar chalets
     this.renderMarkers();
+
+    // Si ya viene seleccionado un chalet, trazar la ruta de inmediato
+    if (this.selectedChalet) {
+      this.drawRoute(this.selectedChalet);
+    }
 
     // Reajustar tamaño tras render
     setTimeout(() => {
@@ -127,7 +162,7 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.userMarker.bindPopup(`
       <div class="user-location-popup">
         <strong>📍 ${user.name}</strong>
-        <p>Tu punto de partida actual para medir distancias.</p>
+        <p>Tu punto de partida actual para trazar rutas.</p>
       </div>
     `);
   }
@@ -186,7 +221,7 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
             <div class="popup-actions">
               <a href="/chalet/${chalet._id}" class="popup-btn-view">Ver Chalet</a>
               <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="popup-btn-route" title="Cómo llegar con Google Maps">
-                <i class="fa-solid fa-diamond-turn-right"></i> Cómo llegar
+                <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
               </a>
             </div>
           </div>
@@ -197,12 +232,14 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
       marker.on('click', () => {
         this.chaletSelected.emit(chalet);
+        this.drawRoute(chalet);
       });
 
       this.markersLayer.addLayer(marker);
     });
 
-    if (bounds.length > 0) {
+    // Si no hay un chalet seleccionado con ruta activa, ajustar a los chalets visibles
+    if (!this.selectedChalet && bounds.length > 0) {
       if (bounds.length === 1) {
         this.map.setView(bounds[0], 12);
       } else {
@@ -211,13 +248,134 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
   }
 
+  async drawRoute(chalet: Chalet): Promise<void> {
+    if (!this.map || !chalet.coordinates?.lat || !chalet.coordinates?.lng) return;
+
+    const user = this.geoService.userLocation();
+    const destLat = chalet.coordinates.lat;
+    const destLng = chalet.coordinates.lng;
+
+    this.routeLayer.clearLayers();
+    this.isLoadingRoute = true;
+
+    if (this.showUserLocation) {
+      this.renderUserLocationMarker();
+    }
+
+    try {
+      // Consultar trazado de carretera real en Guatemala a OSRM
+      const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${user.lng},${user.lat};${destLng},${destLat}?overview=full&geometries=geojson`;
+      const response = await fetch(osrmUrl, { signal: AbortSignal.timeout(6000) });
+      const data = await response.json();
+
+      if (data && data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const coordinates = route.geometry.coordinates as [number, number][];
+        const latLngs: L.LatLngTuple[] = coordinates.map(([lng, lat]) => [lat, lng]);
+
+        // Casing / línea sombra de profundidad
+        const casing = L.polyline(latLngs, {
+          color: '#083E33',
+          weight: 7,
+          opacity: 0.35,
+          lineCap: 'round',
+          lineJoin: 'round'
+        });
+
+        // Línea principal de ruta (Terracota cálido de TropicStay)
+        const polyline = L.polyline(latLngs, {
+          color: '#D97736',
+          weight: 4.5,
+          opacity: 0.95,
+          lineCap: 'round',
+          lineJoin: 'round'
+        });
+
+        this.routeLayer.addLayer(casing);
+        this.routeLayer.addLayer(polyline);
+
+        const distKm = (route.distance / 1000).toFixed(1);
+        const totalMinutes = Math.round(route.duration / 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const mins = totalMinutes % 60;
+        const durationText = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
+
+        this.activeRouteInfo = {
+          chaletTitle: chalet.title,
+          distanceKm: distKm,
+          durationFormatted: durationText,
+          originName: user.name
+        };
+
+        const bounds = L.latLngBounds(latLngs);
+        this.currentRouteBounds = bounds;
+        this.map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+        this.isLoadingRoute = false;
+        return;
+      }
+    } catch (e) {
+      console.warn('Ruta OSRM no disponible, usando trazado directo:', e);
+    }
+
+    // Fallback: Trazado directo con línea punteada
+    const directPoints: L.LatLngTuple[] = [
+      [user.lat, user.lng],
+      [destLat, destLng]
+    ];
+
+    const fallbackLine = L.polyline(directPoints, {
+      color: '#D97736',
+      weight: 4,
+      dashArray: '8, 8',
+      opacity: 0.9
+    });
+
+    this.routeLayer.addLayer(fallbackLine);
+
+    const distKm = this.geoService.getDistanceToChalet(destLat, destLng);
+    const estMinutes = Math.round((distKm / 65) * 60);
+    const hours = Math.floor(estMinutes / 60);
+    const mins = estMinutes % 60;
+
+    this.activeRouteInfo = {
+      chaletTitle: chalet.title,
+      distanceKm: `${distKm}`,
+      durationFormatted: hours > 0 ? `${hours}h ${mins}m` : `${mins} min`,
+      originName: user.name
+    };
+
+    const fallbackBounds = L.latLngBounds(directPoints);
+    this.currentRouteBounds = fallbackBounds;
+    this.map.fitBounds(fallbackBounds, { padding: [60, 60], maxZoom: 14, animate: true });
+    this.isLoadingRoute = false;
+  }
+
+  fitRoute(): void {
+    if (this.currentRouteBounds && this.map) {
+      this.map.fitBounds(this.currentRouteBounds, { padding: [60, 60], maxZoom: 14, animate: true });
+    }
+  }
+
+  clearRoute(): void {
+    this.routeLayer.clearLayers();
+    this.activeRouteInfo = null;
+    this.currentRouteBounds = null;
+  }
+
   focusChalet(chalet: Chalet): void {
     if (!this.map || !chalet.coordinates) return;
     this.map.setView([chalet.coordinates.lat, chalet.coordinates.lng], 13, { animate: true });
   }
 
   recenter(): void {
-    this.renderMarkers();
+    if (!this.map) return;
+    // Bounding box geográfico completo que encuadra toda la República de Guatemala
+    // De Petén (Norte) al Océano Pacífico (Sur), y de San Marcos (Oeste) a Izabal (Este)
+    const guatemalaBounds = L.latLngBounds(
+      [13.73, -92.24], // Suroeste
+      [17.82, -88.22]  // Noreste
+    );
+    this.map.fitBounds(guatemalaBounds, { padding: [25, 25], animate: true });
   }
 
   private getCategoryEmoji(cat: string): string {

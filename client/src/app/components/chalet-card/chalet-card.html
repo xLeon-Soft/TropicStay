@@ -44,7 +44,7 @@
       </div>
 
       @if (chalet.host) {
-        <div class="host-pill" title="Anfitrión: {{ chalet.host.name }}">
+        <div class="host-pill clickable-host-pill" (click)="goToHost($event)" title="Ver perfil del anfitrión: {{ chalet.host.name }}">
           <img [src]="chalet.host.avatar" [alt]="chalet.host.name" class="host-thumb" />
           @if (chalet.host.superhost) {
             <span class="superhost-dot" title="Superanfitrión">★</span>

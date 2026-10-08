@@ -1,5 +1,5 @@
 import { Component, Input, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Chalet } from '../../models/chalet.model';
 import { ChaletService } from '../../services/chalet.service';
@@ -15,9 +15,18 @@ import { ComparisonService } from '../../services/comparison.service';
 })
 export class ChaletCardComponent {
   @Input({ required: true }) chalet!: Chalet;
+  private router = inject(Router);
   chaletService = inject(ChaletService);
   geoService = inject(GeolocationService);
   compareService = inject(ComparisonService);
+
+  goToHost(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (this.chalet.host?._id) {
+      this.router.navigate(['/host', this.chalet.host._id]);
+    }
+  }
 
   toggleFavorite(event: Event) {
     event.preventDefault();

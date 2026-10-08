@@ -123,7 +123,10 @@
 
           <div class="host-actions">
             <a [routerLink]="['/host', chalet.host._id]" class="btn-outline btn-sm">
-              <i class="fa-solid fa-user"></i> Ver perfil del anfitrión y otros chalets
+              <i class="fa-solid fa-user"></i> Ver perfil del anfitrión
+            </a>
+            <a [href]="hostWhatsAppUrl" target="_blank" rel="noopener noreferrer" class="btn-whatsapp-sm" title="Escribir al anfitrión por WhatsApp">
+              <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp
             </a>
           </div>
         </div>
@@ -415,11 +418,11 @@
               <div class="date-picker-grid">
                 <div class="date-field">
                   <label>Llegada</label>
-                  <input type="date" [(ngModel)]="checkInDate" name="checkIn" required />
+                  <input type="date" [(ngModel)]="checkInDate" name="checkIn" [min]="minBookingDate" required />
                 </div>
                 <div class="date-field">
                   <label>Salida</label>
-                  <input type="date" [(ngModel)]="checkOutDate" name="checkOut" required />
+                  <input type="date" [(ngModel)]="checkOutDate" name="checkOut" [min]="checkInDate || minBookingDate" required />
                 </div>
               </div>
 
@@ -470,6 +473,10 @@
                 <i class="fa-solid fa-calendar-check"></i>
                 <span>{{ isBookingSubmitting ? 'Confirmando...' : 'Reservar Chalet Ahora' }}</span>
               </button>
+
+              @if (bookingError) {
+                <div class="form-error" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ bookingError }}</div>
+              }
 
               <p class="booking-guarantee-note">
                 <i class="fa-solid fa-lock"></i> No se realizará ningún cobro inmediato. Pago directo con el anfitrión.

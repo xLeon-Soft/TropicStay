@@ -129,27 +129,39 @@
           </p>
 
           <div class="host-avatars-row">
-            <div class="host-avatar-card">
-              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&q=80" alt="Sofía Méndez" class="host-avatar-img" />
-              <div>
-                <strong>Sofía Méndez</strong>
-                <span>Atitlán • 4.98 ★</span>
+            @if (featuredHosts.length > 0) {
+              @for (h of featuredHosts; track h._id) {
+                <a [routerLink]="['/host', h._id]" class="host-avatar-card clickable-host-card" title="Ver perfil y chalets de {{ h.name }}">
+                  <img [src]="h.avatar" [alt]="h.name" class="host-avatar-img" />
+                  <div>
+                    <strong>{{ h.name }}</strong>
+                    <span>{{ h.location || 'Guatemala' }} • {{ h.rating }} ★</span>
+                  </div>
+                </a>
+              }
+            } @else {
+              <div class="host-avatar-card">
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&q=80" alt="Sofía Méndez" class="host-avatar-img" />
+                <div>
+                  <strong>Sofía Méndez</strong>
+                  <span>Atitlán • 4.98 ★</span>
+                </div>
               </div>
-            </div>
-            <div class="host-avatar-card">
-              <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80" alt="Carlos Valenzuela" class="host-avatar-img" />
-              <div>
-                <strong>Carlos Valenzuela</strong>
-                <span>Monterrico • 4.92 ★</span>
+              <div class="host-avatar-card">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&q=80" alt="Carlos Valenzuela" class="host-avatar-img" />
+                <div>
+                  <strong>Carlos Valenzuela</strong>
+                  <span>Monterrico • 4.92 ★</span>
+                </div>
               </div>
-            </div>
-            <div class="host-avatar-card">
-              <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&q=80" alt="Doña Elena Asturias" class="host-avatar-img" />
-              <div>
-                <strong>Doña Elena</strong>
-                <span>Antigua • 4.95 ★</span>
+              <div class="host-avatar-card">
+                <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&q=80" alt="Doña Elena Asturias" class="host-avatar-img" />
+                <div>
+                  <strong>Doña Elena</strong>
+                  <span>Antigua • 4.95 ★</span>
+                </div>
               </div>
-            </div>
+            }
           </div>
         </div>
 

@@ -25,7 +25,7 @@
     <div class="navbar-actions">
       <!-- Currency Switcher -->
       <button class="currency-toggle" (click)="toggleCurrency()" title="Cambiar moneda">
-        <span class="currency-flag">🇬🇹</span>
+        <span class="currency-flag">{{ chaletService.currency() === 'GTQ' ? '🇬🇹' : '🇺🇸' }}</span>
         <span class="currency-code">{{ chaletService.currency() }}</span>
         <i class="fa-solid fa-arrows-rotate"></i>
       </button>
@@ -37,12 +37,22 @@
       </a>
 
       <!-- Favorites link -->
-      <a routerLink="/explore" class="btn-favorites" title="Mis Chalets Favoritos">
+      <a routerLink="/explore" [queryParams]="{favorites: 'true'}" class="btn-favorites" title="Mis Chalets Favoritos">
         <i class="fa-solid fa-heart"></i>
         @if (chaletService.favorites().length > 0) {
           <span class="fav-count">{{ chaletService.favorites().length }}</span>
         }
       </a>
+
+      <button class="user-menu" (click)="logout()" title="Cerrar sesión">
+        @if (auth.user()?.picture) {
+          <img [src]="auth.user()?.picture" [alt]="auth.user()?.name">
+        } @else {
+          <i class="fa-solid fa-user"></i>
+        }
+        <span>{{ auth.user()?.name?.split(' ')?.[0] }}</span>
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </button>
 
       <!-- Mobile Hamburger Button -->
       <button class="menu-toggle" (click)="toggleMenu()" aria-label="Abrir menú">
@@ -62,14 +72,22 @@
         <i class="fa-solid fa-compass"></i>
         <span>Explorar Chalets de Guatemala</span>
       </a>
+      <a routerLink="/explore" [queryParams]="{favorites: 'true'}" (click)="toggleMenu()" class="mobile-nav-item">
+        <i class="fa-solid fa-heart text-danger"></i>
+        <span>Mis Favoritos ({{ chaletService.favorites().length }})</span>
+      </a>
       <a routerLink="/publish" (click)="toggleMenu()" class="mobile-nav-item publish-highlight">
         <i class="fa-solid fa-plus-circle"></i>
         <span>Publicar mi Chalet</span>
       </a>
+      <button type="button" (click)="logout()" class="mobile-nav-item mobile-logout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span>Cerrar sesión</span>
+      </button>
       <div class="mobile-currency-row">
         <span>Moneda activa:</span>
         <button class="currency-toggle" (click)="toggleCurrency()">
-          <span>{{ chaletService.currency() }}</span>
+          <span>{{ chaletService.currency() === 'GTQ' ? '🇬🇹' : '🇺🇸' }} {{ chaletService.currency() }}</span>
           <i class="fa-solid fa-arrows-rotate"></i>
         </button>
       </div>

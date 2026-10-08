@@ -1,0 +1,21 @@
+<section class="login-page">
+  <div class="login-card">
+    <img src="logo.png" alt="TropicStay" class="login-logo">
+    <span class="eyebrow">BIENVENIDO A TROPICSTAY</span>
+    <h1>Tu próxima escapada empieza aquí</h1>
+    <p>Inicia sesión para descubrir chalets únicos en Guatemala, guardar tus favoritos y hacer tus reservaciones.</p>
+
+    <div #googleButton class="google-button" aria-label="Iniciar sesión con Google"></div>
+    @if (loading()) {
+      <span class="loading-text"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando acceso seguro…</span>
+    }
+    @if (signingIn()) {
+      <span class="loading-text"><i class="fa-solid fa-circle-notch fa-spin"></i> Validando tu cuenta…</span>
+    }
+    @if (error()) {
+      <p class="login-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error() }}</p>
+    }
+
+    <small>Al continuar, aceptas nuestros términos de uso y política de privacidad.</small>
+  </div>
+</section>

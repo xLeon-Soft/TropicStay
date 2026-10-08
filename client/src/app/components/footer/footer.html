@@ -28,9 +28,9 @@
           La plataforma líder en Guatemala especializada en alquiler de chalets vacacionales de lujo: lagos volcánicos, playas del Pacífico, bosques nubosos y selvas mayas.
         </p>
         <div class="social-links">
-          <a href="#" class="social-icon" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-          <a href="#" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
-          <a href="#" class="social-icon" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook"></i></a>
+          <a [href]="whatsappSupportUrl" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="WhatsApp Soporte TropicStay"><i class="fa-brands fa-whatsapp"></i></a>
         </div>
       </div>
 
@@ -92,12 +92,102 @@
     <div class="footer-bottom">
       <p>© {{ currentYear }} TropicStay Guatemala. Todos los derechos reservados. Desarrollado con pasión para el turismo guatemalteco.</p>
       <div class="footer-bottom-links">
-        <a href="#">Privacidad</a>
+        <button type="button" class="policy-link-btn" (click)="openPolicy('privacy')">Privacidad</button>
         <span>•</span>
-        <a href="#">Términos del Servicio</a>
+        <button type="button" class="policy-link-btn" (click)="openPolicy('terms')">Términos del Servicio</button>
         <span>•</span>
-        <a href="#">Políticas de Cancelación</a>
+        <button type="button" class="policy-link-btn" (click)="openPolicy('cancellation')">Políticas de Cancelación</button>
       </div>
     </div>
   </div>
+
+  <!-- Modal Interactivo de Políticas y Términos -->
+  @if (activePolicy) {
+    <div class="policy-modal-backdrop animate-fade" (click)="closePolicy()">
+      <div class="policy-modal-card glass-panel" (click)="$event.stopPropagation()">
+        <div class="policy-modal-header">
+          <div class="policy-tabs">
+            <button 
+              type="button" 
+              class="policy-tab" 
+              [class.active]="activePolicy === 'privacy'" 
+              (click)="openPolicy('privacy')">
+              <i class="fa-solid fa-user-shield"></i> Privacidad
+            </button>
+            <button 
+              type="button" 
+              class="policy-tab" 
+              [class.active]="activePolicy === 'terms'" 
+              (click)="openPolicy('terms')">
+              <i class="fa-solid fa-file-contract"></i> Términos de Servicio
+            </button>
+            <button 
+              type="button" 
+              class="policy-tab" 
+              [class.active]="activePolicy === 'cancellation'" 
+              (click)="openPolicy('cancellation')">
+              <i class="fa-solid fa-calendar-xmark"></i> Cancelación
+            </button>
+          </div>
+          <button type="button" class="policy-close-btn" (click)="closePolicy()">&times;</button>
+        </div>
+
+        <div class="policy-modal-body">
+          @if (activePolicy === 'privacy') {
+            <div class="policy-content animate-fade">
+              <h3><i class="fa-solid fa-shield-halved text-primary"></i> Política de Privacidad de TropicStay</h3>
+              <p class="policy-intro">En TropicStay cuidamos la seguridad y confidencialidad de la información de nuestros huéspedes y anfitriones.</p>
+              
+              <h4>1. Datos que Recopilamos</h4>
+              <p>Únicamente recopilamos los datos estrictamente necesarios para coordinar tu estancia: nombre completo, correo electrónico, teléfono de contacto y fechas de reserva.</p>
+
+              <h4>2. Uso de tu Información</h4>
+              <p>Tus datos se utilizan con el único propósito de confirmar tu reserva y facilitar la comunicación directa y segura con el anfitrión del chalet.</p>
+
+              <h4>3. Confidencialidad</h4>
+              <p>Nunca vendemos ni transferimos tu información a terceros. Toda comunicación es directa entre huésped y anfitrión verificado.</p>
+            </div>
+          }
+
+          @if (activePolicy === 'terms') {
+            <div class="policy-content animate-fade">
+              <h3><i class="fa-solid fa-handshake-angle text-primary"></i> Términos del Servicio</h3>
+              <p class="policy-intro">Al utilizar TropicStay para buscar, publicar o alquilar chalets en Guatemala, aceptas los siguientes principios comunitarios:</p>
+
+              <h4>1. Veracidad de la Información</h4>
+              <p>Los anfitriones garantizan que las fotografías, amenidades y tarifas publicadas corresponden fielmente al estado actual de la propiedad.</p>
+
+              <h4>2. Respeto al Entorno Natural y Comunitario</h4>
+              <p>Nuestros chalets se ubican en joyas naturales como Atitlán, Monterrico y Tecpán. Los huéspedes deben cuidar las instalaciones y respetar las normas locales.</p>
+
+              <h4>3. Pago Directo y Seguro</h4>
+              <p>Las reservas se confirman en línea y el pago se coordina directamente con el anfitrión de acuerdo a los métodos acordados (transferencia local, efectivo, etc.).</p>
+            </div>
+          }
+
+          @if (activePolicy === 'cancellation') {
+            <div class="policy-content animate-fade">
+              <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> Políticas de Cancelación y Reembolso</h3>
+              <p class="policy-intro">Buscamos flexibilidad tanto para viajeros como para anfitriones locales.</p>
+
+              <h4>1. Cancelación Flexible</h4>
+              <p>Puedes cancelar sin costo hasta <strong>48 horas antes</strong> del día de check-in contactando directamente a tu anfitrión.</p>
+
+              <h4>2. Cancelaciones de Última Hora</h4>
+              <p>Cancelaciones dentro de las 48 horas previas al ingreso quedan sujetas a las normas específicas descritas en la ficha de cada chalet.</p>
+
+              <h4>3. Depósito en Garantía</h4>
+              <p>El depósito por daños se reintegra al 100% al finalizar la estancia tras la entrega de las llaves en buen estado.</p>
+            </div>
+          }
+        </div>
+
+        <div class="policy-modal-footer">
+          <button type="button" class="btn-primary" (click)="closePolicy()">
+            <i class="fa-solid fa-check"></i> Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  }
 </footer>

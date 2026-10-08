@@ -20,6 +20,9 @@
   top: 14px;
   left: 14px;
   z-index: 500;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .map-ctrl-btn {
@@ -34,6 +37,7 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
@@ -41,6 +45,148 @@
   background: var(--sand-light);
   transform: translateY(-2px);
   color: var(--accent);
+}
+
+.btn-route-toggle {
+  background: var(--primary);
+  color: #FFFFFF;
+  border-color: var(--primary);
+}
+
+.btn-route-toggle:hover {
+  background: var(--primary-hover);
+  color: #FFFFFF;
+}
+
+/* Loading route indicator */
+.route-loading-pill {
+  position: absolute;
+  top: 60px;
+  left: 14px;
+  z-index: 500;
+  background: rgba(20, 43, 35, 0.92);
+  color: #FFFFFF;
+  backdrop-filter: blur(8px);
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: var(--shadow-md);
+}
+
+/* Active route banner on bottom */
+.active-route-banner {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(217, 119, 54, 0.35);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 8px 24px rgba(20, 43, 35, 0.18);
+}
+
+.route-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, #B8591B 100%);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(217, 119, 54, 0.3);
+}
+
+.route-banner-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.route-banner-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-dest-tag {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.route-banner-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #FAF7F2;
+  border: 1px solid var(--border-subtle);
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.stat-origin {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.route-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.btn-route-action {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-card);
+  background: #FFFFFF;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-route-action:hover {
+  background: var(--sand-light);
+  transform: scale(1.1);
+  color: var(--accent);
+}
+
+.btn-close-route:hover {
+  color: #EF4444;
+  border-color: #EF4444;
 }
 
 /* Custom Leaflet Pins (Estilo Airbnb con precio) */

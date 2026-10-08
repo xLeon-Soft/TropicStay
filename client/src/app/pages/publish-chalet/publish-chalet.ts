@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ChaletService } from '../../services/chalet.service';
 
+interface LocalImage {
+  file: File;
+  previewUrl: string;
+}
+
 @Component({
   selector: 'app-publish-chalet',
   standalone: true,
@@ -65,6 +70,9 @@ export class PublishChaletComponent {
   isSubmitting = false;
   publishSuccess = false;
   createdChaletId = '';
+  publishError = '';
+  imageError = '';
+  selectedLocalImages: LocalImage[] = [];
 
   departmentsList = [
     'Sololá',
@@ -99,9 +107,65 @@ export class PublishChaletComponent {
     this.rulesList.splice(index, 1);
   }
 
+  onImagesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    this.imageError = '';
+
+    if (this.selectedLocalImages.length + files.length > 10) {
+      this.imageError = 'Puedes seleccionar un máximo de 10 imágenes.';
+      input.value = '';
+      return;
+    }
+
+    const invalidFile = files.find(file => !/^image\/(jpeg|png|webp|gif)$/.test(file.type) || file.size > 8 * 1024 * 1024);
+    if (invalidFile) {
+      this.imageError = 'Usa imágenes JPG, PNG, WEBP o GIF de hasta 8 MB cada una.';
+      input.value = '';
+      return;
+    }
+
+    this.selectedLocalImages.push(...files.map(file => ({ file, previewUrl: URL.createObjectURL(file) })));
+    input.value = '';
+  }
+
+  removeLocalImage(index: number): void {
+    const [removed] = this.selectedLocalImages.splice(index, 1);
+    if (removed) URL.revokeObjectURL(removed.previewUrl);
+  }
+
+  private clearLocalImages(): void {
+    this.selectedLocalImages.forEach(image => URL.revokeObjectURL(image.previewUrl));
+    this.selectedLocalImages = [];
+  }
+
   onSubmit(): void {
+    this.publishError = '';
+    if (!this.mainImageUrl.trim() && this.selectedLocalImages.length === 0) {
+      this.publishError = 'Agrega una URL de imagen o selecciona al menos una fotografía desde tu computadora.';
+      return;
+    }
     if (!this.title.trim() || !this.description.trim() || !this.pricePerNight) {
       alert('Por favor completa el título, descripción y precio por noche del chalet.');
+      return;
+    }
+
+    if (this.selectedLocalImages.length > 0) {
+      this.isSubmitting = true;
+      this.chaletService.uploadImages(this.selectedLocalImages.map(image => image.file)).subscribe({
+        next: ({ urls }) => {
+          const existingUrls = [this.mainImageUrl.trim(), ...this.additionalImages.split('\n').map(url => url.trim())].filter(Boolean);
+          this.mainImageUrl = urls[0];
+          this.additionalImages = [...urls.slice(1), ...existingUrls].join('\n');
+          this.clearLocalImages();
+          this.isSubmitting = false;
+          this.onSubmit();
+        },
+        error: (err) => {
+          this.isSubmitting = false;
+          this.publishError = err?.error?.message || 'No pudimos subir las imágenes. Inténtalo nuevamente.';
+        }
+      });
       return;
     }
 
@@ -159,5 +223,28 @@ export class PublishChaletComponent {
     } else {
       this.router.navigate(['/explore']);
     }
+  }
+
+  resetForm(): void {
+    this.title = '';
+    this.category = 'Lago';
+    this.department = 'Sololá';
+    this.municipality = 'San Marcos La Laguna';
+    this.locationName = 'Lago de Atitlán, Sololá';
+    this.description = '';
+    this.pricePerNight = 2200;
+    this.deposit = 500;
+    this.cleaningFee = 150;
+    this.guestsMax = 6;
+    this.bedrooms = 3;
+    this.beds = 4;
+    this.bathrooms = 2;
+    this.selectedAmenities = ['Piscina privada', 'Wifi de alta velocidad', 'Parrilla BBQ'];
+    this.rulesList = ['No fumar en habitaciones', 'Música moderada después de las 22:00'];
+    this.publishSuccess = false;
+    this.createdChaletId = '';
+    this.publishError = '';
+    this.imageError = '';
+    this.clearLocalImages();
   }
 }

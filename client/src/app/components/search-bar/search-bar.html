@@ -72,7 +72,7 @@
   <div class="quick-destinations">
     <span class="quick-label">Destinos rápidos:</span>
     @for (dest of popularDestinations; track dest.name) {
-      <button type="button" class="quick-pill" (click)="selectDestination(dest.name)">
+      <button type="button" class="quick-pill" (click)="selectDestination(dest)" title="Ver chalets en {{ dest.name }}">
         <i class="fa-solid fa-location-dot"></i> {{ dest.name }}
       </button>
     }

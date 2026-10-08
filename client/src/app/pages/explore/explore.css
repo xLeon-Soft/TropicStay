@@ -112,6 +112,40 @@
   letter-spacing: 0.04em;
 }
 
+.btn-fav-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: #FAF7F2;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-fav-filter:hover {
+  background: #FFE4E6;
+  border-color: #F43F5E;
+}
+
+.btn-fav-filter.active {
+  background: #FFF1F2;
+  border-color: #F43F5E;
+  color: #BE123C;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.15);
+}
+
+.fav-active-badge {
+  background: #FFE4E6 !important;
+  color: #BE123C !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+}
+
 .search-input-box {
   display: flex;
   align-items: center;

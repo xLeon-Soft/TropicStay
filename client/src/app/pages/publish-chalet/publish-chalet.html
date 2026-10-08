@@ -19,7 +19,7 @@
         <button class="btn-primary" (click)="viewPublishedChalet()">
           <i class="fa-solid fa-eye"></i> Ver Mi Chalet Publicado
         </button>
-        <button class="btn-outline" (click)="publishSuccess = false">
+        <button class="btn-outline" (click)="resetForm()">
           Publicar Otro Chalet
         </button>
       </div>
@@ -120,12 +120,31 @@
       <div class="form-section">
         <h3 class="section-heading"><i class="fa-solid fa-camera"></i> 4. Fotografías del Chalet</h3>
         <div class="form-group">
-          <label>URL de Foto Principal (Portada) *</label>
-          <input type="url" [(ngModel)]="mainImageUrl" name="mainImageUrl" placeholder="https://..." required />
+          <label>URL de Foto Principal (Portada)</label>
+          <input type="url" [(ngModel)]="mainImageUrl" name="mainImageUrl" placeholder="https://..." />
         </div>
         <div class="form-group mt-1">
           <label>URLs de Fotos Adicionales (Una por línea)</label>
           <textarea [(ngModel)]="additionalImages" name="additionalImages" rows="3" placeholder="https://imagen2.jpg&#10;https://imagen3.jpg"></textarea>
+        </div>
+        <div class="form-group mt-1 local-upload-group">
+          <label for="local-images">O sube fotografías desde tu computadora</label>
+          <input id="local-images" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple (change)="onImagesSelected($event)" />
+          <span class="input-hint">JPG, PNG, WEBP o GIF. Máximo 10 imágenes de 8 MB cada una. La primera será la portada.</span>
+          @if (imageError) {
+            <p class="form-error" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ imageError }}</p>
+          }
+          @if (selectedLocalImages.length > 0) {
+            <div class="local-images-preview">
+              @for (image of selectedLocalImages; track image.previewUrl; let i = $index) {
+                <figure class="local-image-item">
+                  <img [src]="image.previewUrl" [alt]="'Vista previa ' + (i + 1)">
+                  @if (i === 0) { <figcaption>Portada</figcaption> }
+                  <button type="button" (click)="removeLocalImage(i)" [attr.aria-label]="'Quitar imagen ' + (i + 1)" title="Quitar imagen">&times;</button>
+                </figure>
+              }
+            </div>
+          }
         </div>
       </div>
 
@@ -167,6 +186,9 @@
 
       <!-- Submit CTA -->
       <div class="form-submit-row">
+        @if (publishError) {
+          <p class="form-error" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ publishError }}</p>
+        }
         <button type="submit" class="btn-primary btn-lg" [disabled]="isSubmitting">
           <i class="fa-solid fa-cloud-arrow-up"></i>
           <span>{{ isSubmitting ? 'Guardando en MongoDB...' : 'Guardar y Publicar mi Chalet' }}</span>

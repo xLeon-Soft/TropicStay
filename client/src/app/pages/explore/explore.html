@@ -105,6 +105,19 @@
         }
       </div>
 
+      <!-- Favorites collection filter -->
+      <div class="filter-group">
+        <label>Mi Colección</label>
+        <button 
+          type="button" 
+          class="btn-fav-filter" 
+          [class.active]="showFavoritesOnly" 
+          (click)="toggleFavoritesFilter()">
+          <i class="fa-solid fa-heart" [style.color]="showFavoritesOnly ? '#F43F5E' : '#94A3B8'"></i>
+          <span>{{ showFavoritesOnly ? 'Mostrando favoritos' : 'Ver solo mis favoritos' }} ({{ chaletService.favorites().length }})</span>
+        </button>
+      </div>
+
       <!-- Search keyword -->
       <div class="filter-group">
         <label>Búsqueda libre</label>
@@ -225,6 +238,12 @@
             {{ selectedCategory }} <button (click)="selectedCategory = 'Todas'; applyFilters()">×</button>
           </span>
         }
+        @if (showFavoritesOnly) {
+          <span class="active-badge fav-active-badge">
+            <i class="fa-solid fa-heart" style="color: #F43F5E;"></i> Favoritos ({{ chalets.length }})
+            <button (click)="toggleFavoritesFilter()" title="Quitar filtro de favoritos">×</button>
+          </span>
+        }
       </div>
 
       @if (loadError) {
@@ -240,10 +259,17 @@
       } @else if (chalets.length === 0) {
         <!-- Empty state -->
         <div class="empty-state glass-panel">
-          <div class="empty-icon"><i class="fa-solid fa-house-circle-xmark"></i></div>
-          <h3>No encontramos chalets con estos filtros</h3>
-          <p>Prueba relajando tus criterios de búsqueda, seleccionando otro departamento o limpiando los filtros.</p>
-          <button (click)="resetFilters()" class="btn-primary">Ver todos los chalets</button>
+          @if (showFavoritesOnly) {
+            <div class="empty-icon" style="color: #F43F5E;"><i class="fa-solid fa-heart-crack"></i></div>
+            <h3>Aún no tienes chalets guardados en Favoritos</h3>
+            <p>Haz clic en el icono de corazón en la foto de cualquier chalet para guardarlo aquí y encontrarlo rápidamente.</p>
+            <button (click)="toggleFavoritesFilter()" class="btn-primary">Ver todos los chalets disponibles</button>
+          } @else {
+            <div class="empty-icon"><i class="fa-solid fa-house-circle-xmark"></i></div>
+            <h3>No encontramos chalets con estos filtros</h3>
+            <p>Prueba relajando tus criterios de búsqueda, seleccionando otro departamento o limpiando los filtros.</p>
+            <button (click)="resetFilters()" class="btn-primary">Ver todos los chalets</button>
+          }
         </div>
       } @else {
         @if (isLoading) {
