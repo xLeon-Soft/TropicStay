@@ -1,0 +1,21 @@
+.messages-page { padding-top: 3rem; padding-bottom: 4rem; }
+.messages-heading { margin-bottom: 1.8rem; }
+.messages-heading h1 { margin: 0.45rem 0; color: var(--text-main); font-size: clamp(2rem, 4vw, 3.2rem); }
+.messages-heading p { margin: 0; color: var(--text-muted); }
+.messages-shell { min-height: 620px; display: grid; grid-template-columns: minmax(280px, 34%) 1fr; overflow: hidden; border: 1px solid rgba(66, 220, 192, .42); border-radius: var(--radius-lg); background: #fff; }
+.conversation-list { border-right: 1px solid rgba(78, 155, 143, .2); background: #f9fcfa; }
+.conversation-list-header, .conversation-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.2rem; border-bottom: 1px solid rgba(78, 155, 143, .18); }
+.conversation-list-header h2, .conversation-header h2 { margin: 0; color: var(--text-main); font-size: 1rem; }
+.conversation-list-header button { color: var(--primary); font-size: .95rem; }
+.conversation-item { width: 100%; display: flex; align-items: center; gap: .75rem; padding: .9rem 1.1rem; text-align: left; border-bottom: 1px solid rgba(78, 155, 143, .12); transition: background var(--transition-fast); }
+.conversation-item:hover, .conversation-item.is-active { background: rgba(66, 220, 192, .12); }
+.conversation-item img, .conversation-header img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--neon-mint); }
+.conversation-info { min-width: 0; flex: 1; display: grid; gap: .2rem; }
+.conversation-info strong { color: var(--text-main); font-size: .88rem; }.conversation-info small { overflow: hidden; color: var(--text-muted); font-size: .75rem; text-overflow: ellipsis; white-space: nowrap; }
+.unread-count { display: grid; min-width: 21px; height: 21px; place-items: center; border-radius: 50%; background: var(--accent); color: #fff; font-size: .68rem; }
+.conversation-panel { min-width: 0; display: flex; flex-direction: column; }.conversation-header { justify-content: flex-start; gap: .7rem; }.conversation-header span { color: var(--primary); font-size: .75rem; font-weight: 700; }
+.messages-thread { flex: 1; min-height: 400px; max-height: 500px; overflow-y: auto; display: flex; flex-direction: column; gap: .75rem; padding: 1.3rem; background: linear-gradient(135deg, #fff, #f7fcfa); }
+.message-bubble { align-self: flex-start; max-width: 74%; padding: .75rem .9rem; border: 1px solid rgba(78, 155, 143, .2); border-radius: 4px var(--radius-md) var(--radius-md); background: #fff; box-shadow: 0 3px 10px rgba(20, 43, 35, .06); }.message-bubble.is-mine { align-self: flex-end; border-color: rgba(66, 220, 192, .5); border-radius: var(--radius-md) 4px var(--radius-md); background: var(--primary); color: #fff; }.message-bubble p { margin: 0; white-space: pre-wrap; }.message-bubble time { display: block; margin-top: .35rem; color: var(--text-muted); font-size: .67rem; }.message-bubble.is-mine time { color: rgba(255,255,255,.76); }
+.message-composer { display: flex; gap: .75rem; align-items: flex-end; padding: 1rem 1.2rem; border-top: 1px solid rgba(78, 155, 143, .18); }.message-composer textarea { flex: 1; min-height: 46px; padding: .7rem; border: 1px solid rgba(78, 155, 143, .36); border-radius: var(--radius-sm); font: inherit; resize: vertical; }.message-composer textarea:focus { outline: none; border-color: var(--neon-mint); box-shadow: 0 0 0 3px rgba(66,220,192,.14); }
+.messages-state { padding: 1.5rem; color: var(--text-muted); text-align: center; }.empty-state, .panel-empty { display: grid; place-content: center; min-height: 280px; gap: .65rem; }.empty-state i, .panel-empty i { color: var(--accent); font-size: 2rem; }.panel-empty { flex: 1; }.panel-empty h2, .panel-empty p { margin: 0; }.messages-error { margin: 0 0 1rem; color: #bd3d30; font-weight: 700; }
+@media (max-width: 760px) { .messages-shell { grid-template-columns: 1fr; }.conversation-list { max-height: 280px; overflow-y: auto; border-right: 0; border-bottom: 1px solid rgba(78,155,143,.2); }.messages-thread { min-height: 320px; }.message-composer { flex-direction: column; align-items: stretch; }.message-bubble { max-width: 88%; } }

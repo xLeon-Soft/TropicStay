@@ -68,7 +68,7 @@
     <!-- Top Amenity Highlights -->
     @if (chalet.amenities && chalet.amenities.length > 0) {
       <div class="amenity-chips">
-        @for (amenity of chalet.amenities.slice(0, 2); track amenity) {
+        @for (amenity of chalet.amenities.slice(0, 1); track amenity) {
           <span class="amenity-chip">
             <i class="fa-solid fa-check"></i> {{ amenity }}
           </span>

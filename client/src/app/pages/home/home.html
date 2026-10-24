@@ -1,7 +1,25 @@
 <div class="home-page">
   <!-- HERO PRINCIPAL -->
   <section class="hero-section">
-    <div class="hero-background-overlay"></div>
+    <div class="hero-video-wrapper">
+      <video
+        class="hero-bg-video"
+        [class.is-transitioning]="isHeroVideoTransitioning()"
+        [src]="activeHeroVideo().src"
+        [poster]="activeHeroVideo().poster"
+        autoplay
+        muted
+        defaultMuted
+        playsinline
+        preload="metadata"
+        aria-hidden="true"
+        (canplay)="playMutedHeroVideo(heroVideo)"
+        (ended)="playNextHeroVideo()"
+        (error)="playNextHeroVideo()"
+        #heroVideo>
+      </video>
+      <div class="hero-background-overlay"></div>
+    </div>
     <div class="container hero-container">
       <div class="hero-copy animate-fade">
         <span class="hero-kicker">Escapadas seleccionadas en Guatemala</span>
@@ -36,7 +54,7 @@
       </div>
 
       <div class="mood-cards-grid">
-        @for (mood of moodCollections; track mood.label) {
+        @for (mood of moodCollections(); track mood.label) {
           <div class="mood-card glass-panel" (click)="filterByMood(mood)">
             <div class="mood-top">
               <span class="mood-emoji">{{ mood.emoji }}</span>
@@ -70,18 +88,35 @@
       </div>
 
       <div class="destinations-grid">
-        @for (dest of destinations; track dest.name) {
-          <a [routerLink]="['/explore']" [queryParams]="{department: dest.department}" class="destination-card">
+        @for (dest of paginatedDestinations; track dest.name) {
+          <a [routerLink]="['/explore']" [queryParams]="{destination: dest.name}" class="destination-card">
             <img [src]="dest.img" [alt]="dest.name" class="dest-img" loading="lazy" />
             <div class="dest-overlay"></div>
             <div class="dest-info">
-              <span class="dest-badge">{{ dest.count }}</span>
+              <span class="dest-eyebrow">Destino seleccionado</span>
               <h3 class="dest-name">{{ dest.name }}</h3>
               <p class="dest-tagline">{{ dest.tagline }}</p>
             </div>
           </a>
         }
       </div>
+      @if (destinationPageCount > 1) {
+        <nav class="featured-pagination destination-pagination" aria-label="Paginación de destinos">
+          <button type="button" class="page-nav" [disabled]="destinationPage === 1" (click)="goToDestinationPage(destinationPage - 1)" aria-label="Página anterior">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <div class="page-numbers">
+            @for (page of destinationPages; track page) {
+              <button type="button" class="page-number" [class.is-active]="page === destinationPage" (click)="goToDestinationPage(page)">
+                {{ page }}
+              </button>
+            }
+          </div>
+          <button type="button" class="page-nav" [disabled]="destinationPage === destinationPageCount" (click)="goToDestinationPage(destinationPage + 1)" aria-label="Página siguiente">
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </nav>
+      }
     </div>
   </section>
 
@@ -100,17 +135,34 @@
         </a>
       </div>
 
-      @if (isLoading) {
+      @if (isLoading()) {
         <div class="loading-container">
           <div class="spinner"></div>
           <p>Cargando chalets de Guatemala...</p>
         </div>
       } @else {
         <div class="chalets-grid">
-          @for (chalet of featuredChalets; track chalet._id) {
+          @for (chalet of paginatedFeaturedChalets; track chalet._id) {
             <app-chalet-card [chalet]="chalet"></app-chalet-card>
           }
         </div>
+        @if (featuredPageCount > 1) {
+          <nav class="featured-pagination" aria-label="Paginación de chalets destacados">
+            <button type="button" class="page-nav" [disabled]="featuredPage === 1" (click)="goToFeaturedPage(featuredPage - 1)" aria-label="Página anterior">
+              <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div class="page-numbers">
+              @for (page of featuredPages; track page) {
+                <button type="button" class="page-number" [class.is-active]="page === featuredPage" (click)="goToFeaturedPage(page)">
+                  {{ page }}
+                </button>
+              }
+            </div>
+            <button type="button" class="page-nav" [disabled]="featuredPage === featuredPageCount" (click)="goToFeaturedPage(featuredPage + 1)" aria-label="Página siguiente">
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </nav>
+        }
       }
     </div>
   </section>
@@ -129,13 +181,13 @@
           </p>
 
           <div class="host-avatars-row">
-            @if (featuredHosts.length > 0) {
-              @for (h of featuredHosts; track h._id) {
+            @if (featuredHosts().length > 0) {
+              @for (h of featuredHosts(); track h._id) {
                 <a [routerLink]="['/host', h._id]" class="host-avatar-card clickable-host-card" title="Ver perfil y chalets de {{ h.name }}">
                   <img [src]="h.avatar" [alt]="h.name" class="host-avatar-img" />
                   <div>
                     <strong>{{ h.name }}</strong>
-                    <span>{{ h.location || 'Guatemala' }} • {{ h.rating }} ★</span>
+                    <span>{{ h.rating }} ★</span>
                   </div>
                 </a>
               }

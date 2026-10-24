@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const bookingSchema = new mongoose.Schema({
+  guest: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
   chalet: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Chalet',
@@ -56,5 +61,8 @@ const bookingSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+bookingSchema.index({ chalet: 1, status: 1, checkIn: 1, checkOut: 1 });
+bookingSchema.index({ guest: 1, checkIn: 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

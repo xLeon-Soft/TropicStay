@@ -61,10 +61,6 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: 'Apasionado por la hospitalidad y por compartir la belleza natural de Guatemala con viajeros de todo el mundo.',
   },
-  location: {
-    type: String,
-    default: 'Guatemala',
-  }
 }, {
   timestamps: true,
 });

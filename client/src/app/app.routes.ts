@@ -33,6 +33,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/host-profile/host-profile').then(m => m.HostProfileComponent),
   },
   {
+    path: 'messages',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/messages/messages').then(m => m.MessagesComponent),
+  },
+  {
     path: '**',
     redirectTo: '',
   }

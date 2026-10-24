@@ -58,4 +58,6 @@ const reviewSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+reviewSchema.index({ chalet: 1, date: -1 });
+
 module.exports = mongoose.model('Review', reviewSchema);

@@ -1,0 +1,65 @@
+<main class="messages-page container">
+  <header class="messages-heading">
+    <span class="section-tag"><i class="fa-solid fa-comments"></i> Comunicación directa</span>
+    <h1>Mensajes</h1>
+    <p>Consulta y responde a huéspedes o anfitriones sin salir de TropicStay.</p>
+  </header>
+
+  @if (error) {
+    <p class="messages-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</p>
+  }
+
+  <section class="messages-shell glass-panel">
+    <aside class="conversation-list" aria-label="Conversaciones">
+      <div class="conversation-list-header">
+        <h2>Conversaciones</h2>
+        <button type="button" (click)="loadConversations()" aria-label="Actualizar mensajes"><i class="fa-solid fa-rotate"></i></button>
+      </div>
+
+      @if (isLoading) {
+        <p class="messages-state">Cargando mensajes...</p>
+      } @else if (conversations.length === 0) {
+        <div class="messages-state empty-state"><i class="fa-regular fa-comment-dots"></i><p>Aún no tienes conversaciones.</p></div>
+      } @else {
+        @for (conversation of conversations; track conversation.partner._id) {
+          <button type="button" class="conversation-item" [class.is-active]="selectedConversation?.partner?._id === conversation.partner._id" (click)="selectConversation(conversation)">
+            <img [src]="conversation.partner.avatar" [alt]="conversation.partner.name">
+            <span class="conversation-info">
+              <strong>{{ conversation.partner.name }}</strong>
+              <small>{{ conversation.lastMessage.isMine ? 'Tú: ' : '' }}{{ conversation.lastMessage.content }}</small>
+            </span>
+            @if (conversation.unreadCount > 0) { <b class="unread-count">{{ conversation.unreadCount }}</b> }
+          </button>
+        }
+      }
+    </aside>
+
+    <div class="conversation-panel">
+      @if (!selectedConversation) {
+        <div class="messages-state panel-empty"><i class="fa-regular fa-paper-plane"></i><h2>Selecciona una conversación</h2><p>Los mensajes nuevos aparecerán aquí.</p></div>
+      } @else {
+        <header class="conversation-header">
+          <img [src]="selectedConversation.partner.avatar" [alt]="selectedConversation.partner.name">
+          <div><h2>{{ selectedConversation.partner.name }}</h2><span><i class="fa-solid fa-shield-check"></i> Perfil verificado</span></div>
+        </header>
+
+        <div class="messages-thread">
+          @if (isConversationLoading) {
+            <p class="messages-state">Cargando conversación...</p>
+          } @else {
+            @for (message of messages; track message._id) {
+              <article class="message-bubble" [class.is-mine]="message.isMine">
+                <p>{{ message.content }}</p><time>{{ formatTime(message.createdAt) }}</time>
+              </article>
+            }
+          }
+        </div>
+
+        <form class="message-composer" (ngSubmit)="send()">
+          <textarea [(ngModel)]="draft" name="draft" rows="3" maxlength="2000" placeholder="Escribe un mensaje..." [disabled]="isSending" required></textarea>
+          <button type="submit" class="btn-primary" [disabled]="isSending || !draft.trim()"><i class="fa-solid fa-paper-plane"></i> {{ isSending ? 'Enviando...' : 'Enviar' }}</button>
+        </form>
+      }
+    </div>
+  </section>
+</main>

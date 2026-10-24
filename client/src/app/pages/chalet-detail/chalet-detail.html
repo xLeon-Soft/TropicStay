@@ -35,7 +35,7 @@
           </span>
           <span class="subline-dot">•</span>
           <span class="detail-location">
-            <i class="fa-solid fa-location-dot"></i> {{ chalet.locationName }}
+            <i class="fa-solid fa-location-dot"></i> {{ chalet.location.join(', ') }}
           </span>
           @if (distanceFormatted) {
             <span class="subline-dot">•</span>
@@ -101,7 +101,7 @@
                   <span class="badge badge-superhost">Superanfitrión</span>
                 }
               </div>
-              <p class="host-location">{{ chalet.host.location || chalet.department }} • Miembro desde {{ chalet.host.memberSince }}</p>
+              <p class="host-location">{{ chalet.department }} • Miembro desde {{ chalet.host.memberSince }}</p>
 
               <div class="host-stats">
                 <span class="host-stat-item">
@@ -176,7 +176,7 @@
               <h2 class="section-subtitle"><i class="fa-solid fa-map-location-dot"></i> Ubicación Exacta y Entorno</h2>
               <p class="location-address-text">
                 <i class="fa-solid fa-location-pin"></i>
-                {{ chalet.locationName }}, {{ chalet.municipality }}, {{ chalet.department }}
+                {{ chalet.location.join(', ') }}, {{ chalet.municipality }}, {{ chalet.department }}
               </p>
             </div>
 
@@ -211,16 +211,6 @@
                   </div>
                 </div>
 
-                @if (googleMapsDirectionsUrl) {
-                  <a 
-                    [href]="googleMapsDirectionsUrl" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    class="btn-primary btn-directions-link">
-                    <i class="fa-solid fa-diamond-turn-right"></i>
-                    <span>Cómo llegar en Google Maps</span>
-                  </a>
-                }
               </div>
             </div>
           }
@@ -418,13 +408,66 @@
               <div class="date-picker-grid">
                 <div class="date-field">
                   <label>Llegada</label>
-                  <input type="date" [(ngModel)]="checkInDate" name="checkIn" [min]="minBookingDate" required />
+                  <button
+                    type="button"
+                    class="booking-date-trigger"
+                    [class.is-active]="showBookingCalendar && selectingBookingDate === 'checkIn'"
+                    (click)="openBookingCalendar('checkIn')">
+                    <span>{{ formatBookingDate(checkInDate) }}</span>
+                    <i class="fa-regular fa-calendar"></i>
+                  </button>
                 </div>
                 <div class="date-field">
                   <label>Salida</label>
-                  <input type="date" [(ngModel)]="checkOutDate" name="checkOut" [min]="checkInDate || minBookingDate" required />
+                  <button
+                    type="button"
+                    class="booking-date-trigger"
+                    [class.is-active]="showBookingCalendar && selectingBookingDate === 'checkOut'"
+                    (click)="openBookingCalendar('checkOut')">
+                    <span>{{ formatBookingDate(checkOutDate) }}</span>
+                    <i class="fa-regular fa-calendar"></i>
+                  </button>
                 </div>
               </div>
+
+              @if (showBookingCalendar) {
+                <section class="booking-calendar" aria-label="Seleccionar fechas de reserva">
+                  <div class="calendar-header">
+                    <div>
+                      <span class="calendar-step">{{ selectingBookingDate === 'checkIn' ? '1. Selecciona llegada' : '2. Selecciona salida' }}</span>
+                      <strong>{{ calendarMonthLabel }}</strong>
+                    </div>
+                    <div class="calendar-navigation">
+                      <button type="button" (click)="changeCalendarMonth(-1)" aria-label="Mes anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                      <button type="button" (click)="changeCalendarMonth(1)" aria-label="Mes siguiente"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                  </div>
+
+                  <div class="calendar-weekdays">
+                    @for (weekday of calendarWeekdays; track weekday) {
+                      <span>{{ weekday }}</span>
+                    }
+                  </div>
+                  <div class="calendar-days">
+                    @for (day of calendarDays; track $index) {
+                      @if (day.value) {
+                        <button
+                          type="button"
+                          [disabled]="isCalendarDayDisabled(day.value)"
+                          [class.is-check-in]="day.value === checkInDate"
+                          [class.is-check-out]="day.value === checkOutDate"
+                          [class.is-in-range]="isDateInSelectedRange(day.value)"
+                          (click)="selectBookingDay(day.value)">
+                          {{ day.label }}
+                        </button>
+                      } @else {
+                        <span></span>
+                      }
+                    }
+                  </div>
+                  <button type="button" class="calendar-close" (click)="showBookingCalendar = false">Listo</button>
+                </section>
+              }
 
               <div class="form-field mt-1">
                 <label>Número de Huéspedes</label>

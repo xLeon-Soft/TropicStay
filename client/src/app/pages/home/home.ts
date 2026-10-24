@@ -1,10 +1,31 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ChaletService } from '../../services/chalet.service';
 import { Chalet, Host } from '../../models/chalet.model';
 import { SearchBarComponent } from '../../components/search-bar/search-bar';
 import { ChaletCardComponent } from '../../components/chalet-card/chalet-card';
+
+interface MoodCollection {
+  emoji: string;
+  icon: string;
+  label: string;
+  subtitle: string;
+  category: string;
+  badge: string;
+}
+
+interface DestinationCard {
+  name: string;
+  department: string;
+  tagline: string;
+  img: string;
+}
+
+interface HeroVideo {
+  src: string;
+  poster: string;
+}
 
 @Component({
   selector: 'app-home',
@@ -16,11 +37,35 @@ import { ChaletCardComponent } from '../../components/chalet-card/chalet-card';
 export class HomeComponent implements OnInit {
   private router = inject(Router);
   chaletService = inject(ChaletService);
-  featuredChalets: Chalet[] = [];
-  featuredHosts: Host[] = [];
-  isLoading = true;
+  readonly featuredChalets = signal<Chalet[]>([]);
+  readonly featuredHosts = signal<Host[]>([]);
+  readonly isLoading = signal(true);
+  private heroVideoIndex = 0;
+  readonly isHeroVideoTransitioning = signal(false);
+  readonly activeHeroVideo = signal<HeroVideo>({
+    src: 'videos/resort-beach-hd.mp4',
+    poster: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1920&q=85'
+  });
+  private readonly heroVideos: HeroVideo[] = [
+    {
+      src: 'videos/resort-beach-hd.mp4',
+      poster: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1920&q=85'
+    },
+    {
+      src: 'videos/villa-pool-hd.mp4',
+      poster: 'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=1920&q=85'
+    },
+    {
+      src: 'videos/luxury-pool-2k.mp4',
+      poster: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1920&q=85'
+    }
+  ];
+  featuredPage = 1;
+  readonly featuredPageSize = 3;
+  destinationPage = 1;
+  readonly destinationPageSize = 3;
 
-  moodCollections = [
+  private readonly moodCollectionDefinitions: MoodCollection[] = [
     {
       emoji: '🌅',
       icon: 'fa-solid fa-water',
@@ -62,59 +107,17 @@ export class HomeComponent implements OnInit {
       badge: 'Aventura única'
     },
     {
-      emoji: '🐾',
-      icon: 'fa-solid fa-paw',
-      label: 'Pet Friendly',
-      subtitle: 'Espacio para toda tu familia',
-      amenity: 'Pet Friendly',
-      badge: 'Mascotas felices'
+      emoji: '🐒',
+      icon: 'fa-solid fa-tree',
+      label: 'Selva Tropical',
+      subtitle: 'Naturaleza, lagunas y aventura',
+      category: 'Selva',
+      badge: 'Naturaleza pura'
     }
   ];
+  readonly moodCollections = signal<MoodCollection[]>([]);
 
-  destinations = [
-    {
-      name: 'Lago de Atitlán',
-      department: 'Sololá',
-      tagline: 'Volcanes majestuosos y aguas místicas',
-      img: 'https://images.unsplash.com/photo-1540541338287-41700207dee6?w=600&q=80',
-      count: '3 Chalets de ensueño',
-    },
-    {
-      name: 'Monterrico & El Paredón',
-      department: 'Santa Rosa',
-      tagline: 'Playas volcánicas y atardeceres dorados',
-      img: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=600&q=80',
-      count: '2 Chalets de playa',
-    },
-    {
-      name: 'Antigua Guatemala',
-      department: 'Sacatepéquez',
-      tagline: 'Patios coloniales y vistas al volcán',
-      img: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80',
-      count: '2 Chalets coloniales',
-    },
-    {
-      name: 'Tecpán & Montañas',
-      department: 'Chimaltenango',
-      tagline: 'Cabañas de pino, leña y niebla',
-      img: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=600&q=80',
-      count: '1 Cabaña alpina',
-    },
-    {
-      name: 'Río Dulce',
-      department: 'Izabal',
-      tagline: 'Palafitos sobre el agua y manglares',
-      img: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=80',
-      count: '1 Chalet sobre el río',
-    },
-    {
-      name: 'Flores & Petén',
-      department: 'Petén',
-      tagline: 'Selva tropical maya y Lago Petén Itzá',
-      img: 'https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?w=600&q=80',
-      count: '1 Eco-chalet selvático',
-    }
-  ];
+  readonly destinations = signal<DestinationCard[]>([]);
 
   ngOnInit(): void {
     this.loadChalets();
@@ -122,23 +125,106 @@ export class HomeComponent implements OnInit {
   }
 
   loadChalets(): void {
-    this.isLoading = true;
+    this.isLoading.set(true);
     this.chaletService.getChalets().subscribe({
       next: (chalets) => {
-        this.featuredChalets = chalets;
-        this.isLoading = false;
+        this.featuredChalets.set(chalets);
+        this.featuredPage = 1;
+        this.setMoodCollections(chalets);
+        this.setDestinations(chalets);
+        this.isLoading.set(false);
       },
       error: (err) => {
         console.error('Error cargando chalets:', err);
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
+  }
+
+  playMutedHeroVideo(video: HTMLVideoElement): void {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.volume = 0;
+    void video.play().catch(() => undefined);
+  }
+
+  playNextHeroVideo(): void {
+    if (this.isHeroVideoTransitioning()) return;
+
+    this.isHeroVideoTransitioning.set(true);
+    window.setTimeout(() => {
+      this.heroVideoIndex = (this.heroVideoIndex + 1) % this.heroVideos.length;
+      this.activeHeroVideo.set(this.heroVideos[this.heroVideoIndex]);
+      this.isHeroVideoTransitioning.set(false);
+    }, 320);
+  }
+
+  get featuredPageCount(): number {
+    return Math.max(1, Math.ceil(this.featuredChalets().length / this.featuredPageSize));
+  }
+
+  get featuredPages(): number[] {
+    return Array.from({ length: this.featuredPageCount }, (_value, index) => index + 1);
+  }
+
+  get paginatedFeaturedChalets(): Chalet[] {
+    const start = (this.featuredPage - 1) * this.featuredPageSize;
+    return this.featuredChalets().slice(start, start + this.featuredPageSize);
+  }
+
+  goToFeaturedPage(page: number): void {
+    this.featuredPage = Math.min(Math.max(page, 1), this.featuredPageCount);
+  }
+
+  get destinationPageCount(): number {
+    return Math.max(1, Math.ceil(this.destinations().length / this.destinationPageSize));
+  }
+
+  get destinationPages(): number[] {
+    return Array.from({ length: this.destinationPageCount }, (_value, index) => index + 1);
+  }
+
+  get paginatedDestinations(): DestinationCard[] {
+    const start = (this.destinationPage - 1) * this.destinationPageSize;
+    return this.destinations().slice(start, start + this.destinationPageSize);
+  }
+
+  goToDestinationPage(page: number): void {
+    this.destinationPage = Math.min(Math.max(page, 1), this.destinationPageCount);
+  }
+
+  private setMoodCollections(chalets: Chalet[]): void {
+    const availableCategories = new Set(chalets.map((chalet) => chalet.category));
+    this.moodCollections.set(this.moodCollectionDefinitions
+      .filter((collection) => availableCategories.has(collection.category)));
+  }
+
+  private setDestinations(chalets: Chalet[]): void {
+    const chaletsByMunicipality = new Map<string, Chalet[]>();
+    for (const chalet of chalets) {
+      const matches = chaletsByMunicipality.get(chalet.municipality) || [];
+      matches.push(chalet);
+      chaletsByMunicipality.set(chalet.municipality, matches);
+    }
+
+    this.destinations.set(Array.from(chaletsByMunicipality.entries())
+      .map(([name, municipalityChalets]) => {
+        const highlighted = [...municipalityChalets].sort((first, second) => second.rating - first.rating)[0];
+        return {
+          name,
+          department: highlighted.department,
+          tagline: highlighted.location?.[0] || `${highlighted.category} en ${highlighted.department}`,
+          img: highlighted.thumbnail || highlighted.images[0],
+        };
+      })
+      .sort((first, second) => first.name.localeCompare(second.name, 'es')));
+    this.destinationPage = 1;
   }
 
   loadHosts(): void {
     this.chaletService.getHosts().subscribe({
       next: (hosts) => {
-        this.featuredHosts = hosts.slice(0, 3);
+        this.featuredHosts.set(hosts.slice(0, 3));
       },
       error: (err) => {
         console.error('Error cargando anfitriones:', err);
@@ -146,10 +232,7 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  filterByMood(mood: any): void {
-    const queryParams: any = {};
-    if (mood.category) queryParams.category = mood.category;
-    if (mood.amenity) queryParams.amenities = mood.amenity;
-    this.router.navigate(['/explore'], { queryParams });
+  filterByMood(mood: MoodCollection): void {
+    this.router.navigate(['/explore'], { queryParams: { category: mood.category } });
   }
 }

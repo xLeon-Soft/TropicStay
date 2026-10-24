@@ -10,9 +10,11 @@ import {
   SimpleChanges,
   ViewChild,
   inject,
-  effect
+  effect,
+  ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import * as L from 'leaflet';
 import { Chalet } from '../../models/chalet.model';
 import { ChaletService } from '../../services/chalet.service';
@@ -41,6 +43,10 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private routeLayer: L.LayerGroup = L.layerGroup();
   private userMarker: L.Marker | null = null;
   private currentRouteBounds: L.LatLngBounds | null = null;
+  private activeRouteChalet: Chalet | null = null;
+  private lastOriginSignature = '';
+  private pendingRouteKey: string | null = null;
+  private routeRequestId = 0;
 
   activeRouteInfo: {
     chaletTitle: string;
@@ -53,15 +59,20 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   chaletService = inject(ChaletService);
   geoService = inject(GeolocationService);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor() {
     effect(() => {
       // Reaccionar cuando cambie la ubicación de partida del usuario (GPS o Ciudad)
-      const _ = this.geoService.userLocation();
+      const user = this.geoService.userLocation();
+      const originSignature = `${user.lat},${user.lng}`;
+      const originChanged = Boolean(this.lastOriginSignature) && this.lastOriginSignature !== originSignature;
+      this.lastOriginSignature = originSignature;
       if (this.map && this.showUserLocation) {
         this.renderUserLocationMarker();
-        if (this.selectedChalet) {
-          this.drawRoute(this.selectedChalet);
+        if (originChanged && this.activeRouteChalet) {
+          this.drawRoute(this.activeRouteChalet);
         }
       }
     });
@@ -220,9 +231,9 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
             </div>
             <div class="popup-actions">
               <a href="/chalet/${chalet._id}" class="popup-btn-view">Ver Chalet</a>
-              <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="popup-btn-route" title="Cómo llegar con Google Maps">
-                <i class="fa-solid fa-diamond-turn-right"></i> Google Maps
-              </a>
+
+
+
             </div>
           </div>
         </div>
@@ -230,9 +241,16 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
       marker.bindPopup(popupContent, { maxWidth: 300, minWidth: 260 });
 
+      marker.on('popupopen', () => {
+        const viewChaletLink = marker.getPopup()?.getElement()?.querySelector<HTMLAnchorElement>('.popup-btn-view');
+        viewChaletLink?.addEventListener('click', (event) => {
+          event.preventDefault();
+          this.router.navigate(['/chalet', chalet._id]);
+        }, { once: true });
+      });
+
       marker.on('click', () => {
         this.chaletSelected.emit(chalet);
-        this.drawRoute(chalet);
       });
 
       this.markersLayer.addLayer(marker);
@@ -254,9 +272,18 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const user = this.geoService.userLocation();
     const destLat = chalet.coordinates.lat;
     const destLng = chalet.coordinates.lng;
+    const routeKey = `${user.lat},${user.lng}:${chalet._id}`;
+
+    if (this.pendingRouteKey === routeKey) return;
+
+    const requestId = ++this.routeRequestId;
+    this.pendingRouteKey = routeKey;
+    this.activeRouteChalet = chalet;
 
     this.routeLayer.clearLayers();
     this.isLoadingRoute = true;
+    this.showEstimatedRoute(chalet, user);
+    this.cdr.markForCheck();
 
     if (this.showUserLocation) {
       this.renderUserLocationMarker();
@@ -265,13 +292,17 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     try {
       // Consultar trazado de carretera real en Guatemala a OSRM
       const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${user.lng},${user.lat};${destLng},${destLat}?overview=full&geometries=geojson`;
-      const response = await fetch(osrmUrl, { signal: AbortSignal.timeout(6000) });
+      const response = await fetch(osrmUrl, { signal: AbortSignal.timeout(3500) });
       const data = await response.json();
 
       if (data && data.code === 'Ok' && data.routes && data.routes.length > 0) {
+        if (requestId !== this.routeRequestId) return;
+
         const route = data.routes[0];
         const coordinates = route.geometry.coordinates as [number, number][];
         const latLngs: L.LatLngTuple[] = coordinates.map(([lng, lat]) => [lat, lng]);
+
+        this.routeLayer.clearLayers();
 
         // Casing / línea sombra de profundidad
         const casing = L.polyline(latLngs, {
@@ -311,13 +342,19 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
         this.currentRouteBounds = bounds;
         this.map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
         this.isLoadingRoute = false;
+        this.pendingRouteKey = null;
+        this.cdr.markForCheck();
         return;
       }
     } catch (e) {
+      if (requestId !== this.routeRequestId) return;
       console.warn('Ruta OSRM no disponible, usando trazado directo:', e);
     }
 
     // Fallback: Trazado directo con línea punteada
+    if (requestId !== this.routeRequestId) return;
+
+    this.routeLayer.clearLayers();
     const directPoints: L.LatLngTuple[] = [
       [user.lat, user.lng],
       [destLat, destLng]
@@ -348,6 +385,41 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.currentRouteBounds = fallbackBounds;
     this.map.fitBounds(fallbackBounds, { padding: [60, 60], maxZoom: 14, animate: true });
     this.isLoadingRoute = false;
+    this.pendingRouteKey = null;
+    this.cdr.markForCheck();
+  }
+
+  private showEstimatedRoute(chalet: Chalet, user: { lat: number; lng: number; name: string }): void {
+    if (!this.map || !chalet.coordinates?.lat || !chalet.coordinates?.lng) return;
+
+    const destination = chalet.coordinates;
+    const directPoints: L.LatLngTuple[] = [
+      [user.lat, user.lng],
+      [destination.lat, destination.lng]
+    ];
+    const estimatedLine = L.polyline(directPoints, {
+      color: '#D97736',
+      weight: 4,
+      dashArray: '8, 8',
+      opacity: 0.9
+    });
+
+    this.routeLayer.addLayer(estimatedLine);
+
+    const distanceKm = this.geoService.getDistanceToChalet(destination.lat, destination.lng);
+    const estimatedMinutes = Math.round((distanceKm / 65) * 60);
+    const hours = Math.floor(estimatedMinutes / 60);
+    const minutes = estimatedMinutes % 60;
+
+    this.activeRouteInfo = {
+      chaletTitle: chalet.title,
+      distanceKm: `${distanceKm}`,
+      durationFormatted: hours > 0 ? `${hours}h ${minutes}m` : `${minutes} min`,
+      originName: user.name
+    };
+
+    this.currentRouteBounds = L.latLngBounds(directPoints);
+    this.map.fitBounds(this.currentRouteBounds, { padding: [60, 60], maxZoom: 14, animate: true });
   }
 
   fitRoute(): void {
@@ -357,9 +429,14 @@ export class ChaletMapComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   clearRoute(): void {
+    this.routeRequestId++;
+    this.pendingRouteKey = null;
+    this.activeRouteChalet = null;
+    this.isLoadingRoute = false;
     this.routeLayer.clearLayers();
     this.activeRouteInfo = null;
     this.currentRouteBounds = null;
+    this.cdr.markForCheck();
   }
 
   focusChalet(chalet: Chalet): void {

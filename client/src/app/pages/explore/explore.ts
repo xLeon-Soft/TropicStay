@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -27,6 +27,7 @@ import { Subscription, timeout } from 'rxjs';
 export class ExploreComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
   chaletService = inject(ChaletService);
   geoService = inject(GeolocationService);
   compareService = inject(ComparisonService);
@@ -37,12 +38,12 @@ export class ExploreComponent implements OnInit {
   private filtersRequest?: Subscription;
 
   // View Mode: 'split' (side-by-side list + map), 'grid' (traditional grid), 'map' (full-width interactive map)
-  viewMode: 'split' | 'grid' | 'map' = 'split';
+  viewMode: 'split' | 'grid' | 'map' = 'grid';
   selectedChalet: Chalet | null = null;
 
   // Filter state
   searchTerm = '';
-  selectedDepartment = 'Todos';
+  selectedDestination = 'Todos';
   selectedCategory = 'Todas';
   selectedGuests = '';
   minRating: number | null = null;
@@ -51,39 +52,17 @@ export class ExploreComponent implements OnInit {
   showFavoritesOnly = false;
 
   // Filter options
-  departments: string[] = [
-    'Todos',
-    'Sololá',
-    'Santa Rosa',
-    'Sacatepéquez',
-    'Izabal',
-    'Chimaltenango',
-    'Petén',
-    'Escuintla',
-    'Alta Verapaz'
-  ];
-
-  categories: string[] = ['Todas', 'Lago', 'Playa', 'Montaña', 'Colonial', 'Selva', 'Río'];
-
-  amenitiesList = [
-    'Piscina privada',
-    'Piscina infinita',
-    'Jacuzzi climatizado',
-    'Vista panorámica al lago',
-    'Frente al mar',
-    'Muelle privado',
-    'Chimenea de leña',
-    'Wifi de alta velocidad',
-    'Pet Friendly',
-    'Aire acondicionado',
-    'Kayaks y Paddleboards',
-    'Parrilla BBQ'
-  ];
+  destinations: string[] = ['Todos'];
+  categories: string[] = ['Todas'];
+  amenitiesList: string[] = [];
+  guestOptions: number[] = [];
+  ratingOptions: number[] = [];
 
   ngOnInit(): void {
+    this.loadFilterOptions();
     this.route.queryParams.subscribe(params => {
       this.searchTerm = params['search'] || '';
-      this.selectedDepartment = params['department'] || 'Todos';
+      this.selectedDestination = params['destination'] || 'Todos';
       this.selectedCategory = params['category'] || 'Todas';
       this.selectedGuests = params['guests'] || '';
       this.minRating = params['minRating'] ? Number(params['minRating']) : null;
@@ -94,6 +73,40 @@ export class ExploreComponent implements OnInit {
 
       this.applyFilters();
     });
+  }
+
+  private loadFilterOptions(): void {
+    this.chaletService.getChalets().pipe(timeout(12000)).subscribe({
+      next: (chalets) => {
+        this.destinations = ['Todos', ...this.uniqueSorted(chalets.map((chalet) => chalet.municipality))];
+        this.categories = ['Todas', ...this.uniqueSorted(chalets.map((chalet) => chalet.category))];
+        this.amenitiesList = this.uniqueSorted(chalets.flatMap((chalet) => chalet.amenities || []));
+        this.guestOptions = [...new Set(chalets.map((chalet) => chalet.guestsMax))].sort((first, second) => first - second);
+        this.ratingOptions = [...new Set(chalets.map((chalet) => Number(chalet.rating.toFixed(1))))]
+          .sort((first, second) => second - first);
+
+        const previousDestination = this.selectedDestination;
+        const previousCategory = this.selectedCategory;
+        const previousAmenities = this.selectedAmenities;
+        if (!this.destinations.includes(this.selectedDestination)) this.selectedDestination = 'Todos';
+        if (!this.categories.includes(this.selectedCategory)) this.selectedCategory = 'Todas';
+        this.selectedAmenities = this.selectedAmenities.filter((amenity) => this.amenitiesList.includes(amenity));
+
+        const filtersChanged = previousDestination !== this.selectedDestination
+          || previousCategory !== this.selectedCategory
+          || previousAmenities.length !== this.selectedAmenities.length;
+        if (filtersChanged) {
+          this.applyFilters();
+          return;
+        }
+        this.cdr.markForCheck();
+      },
+      error: (error) => console.error('Error cargando opciones de filtros:', error),
+    });
+  }
+
+  private uniqueSorted(values: string[]): string[] {
+    return [...new Set(values.filter(Boolean))].sort((first, second) => first.localeCompare(second, 'es'));
   }
 
   toggleAmenity(amenity: string): void {
@@ -123,7 +136,7 @@ export class ExploreComponent implements OnInit {
     const params: FilterParams = {};
 
     if (this.searchTerm.trim()) params.search = this.searchTerm.trim();
-    if (this.selectedDepartment !== 'Todos') params.department = this.selectedDepartment;
+    if (this.selectedDestination !== 'Todos') params.municipality = this.selectedDestination;
     if (this.selectedCategory !== 'Todas') params.category = this.selectedCategory;
     if (this.selectedGuests) params.guests = Number(this.selectedGuests);
     if (this.minRating) params.minRating = this.minRating;
@@ -132,7 +145,8 @@ export class ExploreComponent implements OnInit {
       params.sort = this.selectedSort;
     }
 
-    this.filtersRequest = this.chaletService.getChalets(params).pipe(timeout(12000)).subscribe({
+    const requestParams = Object.keys(params).length > 0 ? params : undefined;
+    this.filtersRequest = this.chaletService.getChalets(requestParams).pipe(timeout(12000)).subscribe({
       next: (chalets) => {
         let list = chalets;
         if (this.showFavoritesOnly) {
@@ -144,11 +158,13 @@ export class ExploreComponent implements OnInit {
           this.sortChaletsByDistance();
         }
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error filtrando chalets:', err);
         this.loadError = 'No pudimos actualizar los resultados. Mostramos los últimos chalets disponibles.';
         this.isLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -200,7 +216,7 @@ export class ExploreComponent implements OnInit {
 
   resetFilters(): void {
     this.searchTerm = '';
-    this.selectedDepartment = 'Todos';
+    this.selectedDestination = 'Todos';
     this.selectedCategory = 'Todas';
     this.selectedGuests = '';
     this.minRating = null;
@@ -213,7 +229,7 @@ export class ExploreComponent implements OnInit {
   get activeFiltersCount(): number {
     let count = 0;
     if (this.searchTerm) count++;
-    if (this.selectedDepartment !== 'Todos') count++;
+    if (this.selectedDestination !== 'Todos') count++;
     if (this.selectedCategory !== 'Todas') count++;
     if (this.selectedGuests) count++;
     if (this.minRating) count++;

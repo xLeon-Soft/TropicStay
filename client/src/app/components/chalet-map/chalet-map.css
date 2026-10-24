@@ -390,7 +390,7 @@
 
 :host ::ng-deep .popup-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 0.5rem;
   margin-top: 0.65rem;
 }
@@ -399,10 +399,13 @@
   background: var(--primary);
   color: #fff !important;
   text-align: center;
-  padding: 0.45rem;
-  border-radius: 8px;
+  flex: 1;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  border-radius: 10px;
+
   font-weight: 700;
-  font-size: 0.78rem;
+
   text-decoration: none;
 }
 

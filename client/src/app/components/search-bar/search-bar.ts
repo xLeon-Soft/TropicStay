@@ -1,6 +1,7 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ChaletService, DestinationOption } from '../../services/chalet.service';
 
 @Component({
   selector: 'app-search-bar',
@@ -9,29 +10,54 @@ import { Router } from '@angular/router';
   templateUrl: './search-bar.html',
   styleUrl: './search-bar.css'
 })
-export class SearchBarComponent {
+export class SearchBarComponent implements OnInit {
   private router = inject(Router);
+  private chaletService = inject(ChaletService);
 
   @Output() searchSubmitted = new EventEmitter<any>();
 
   destination: string = '';
   category: string = 'Todas';
   guests: string = '';
+  readonly destinations = signal<DestinationOption[]>([]);
 
-  popularDestinations = [
-    { name: 'Lago de Atitlán', dept: 'Sololá' },
-    { name: 'Monterrico', dept: 'Santa Rosa' },
-    { name: 'Antigua Guatemala', dept: 'Sacatepéquez' },
-    { name: 'Río Dulce', dept: 'Izabal' },
-    { name: 'Tecpán', dept: 'Chimaltenango' },
-    { name: 'Flores / Tikal', dept: 'Petén' },
-  ];
+  ngOnInit(): void {
+    this.chaletService.getDestinations().subscribe({
+      next: (destinations) => this.destinations.set(destinations),
+      error: (error) => console.error('Error cargando destinos:', error),
+    });
+  }
 
-  selectDestination(dest: { name: string; dept: string }) {
-    this.destination = dest.name;
+  get selectedDestination(): DestinationOption | undefined {
+    return this.destinations().find((destination) => destination.name === this.destination);
+  }
+
+  onDestinationChange(): void {
+    const selectedDestination = this.selectedDestination;
+    this.category = selectedDestination?.categories.length === 1
+      ? selectedDestination.categories[0]
+      : 'Todas';
+  }
+
+  onCategoryChange(): void {
+    if (this.category === 'Todas') {
+      this.destination = '';
+      return;
+    }
+
+    this.destination = this.destinations()
+      .find((destination) => destination.categories.includes(this.category))?.name || '';
+  }
+
+  isCategoryLocked(): boolean {
+    return this.selectedDestination?.categories.length === 1;
+  }
+
+  selectDestination(destination: DestinationOption): void {
+    this.destination = destination.name;
+    this.onDestinationChange();
     const queryParams: any = {
-      search: dest.name,
-      department: dest.dept
+      destination: destination.name,
     };
     if (this.category !== 'Todas') queryParams.category = this.category;
     if (this.guests) queryParams.guests = this.guests;
@@ -42,7 +68,7 @@ export class SearchBarComponent {
 
   onSearch() {
     const queryParams: any = {};
-    if (this.destination.trim()) queryParams.search = this.destination.trim();
+    if (this.destination.trim()) queryParams.destination = this.destination.trim();
     if (this.category !== 'Todas') queryParams.category = this.category;
     if (this.guests) queryParams.guests = this.guests;
 

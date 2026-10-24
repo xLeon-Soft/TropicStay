@@ -62,8 +62,8 @@
           </div>
 
           <div class="form-group">
-            <label>Ubicación Descriptiva *</label>
-            <input type="text" [(ngModel)]="locationName" name="locationName" placeholder="Ej: Orilla del Lago de Atitlán, Sololá" required />
+            <label>Ubicaciones descriptivas *</label>
+            <textarea [(ngModel)]="locationsText" name="locationsText" rows="2" placeholder="Ej: Orilla del Lago de Atitlán, Sololá&#10;Muelle privado" required></textarea>
           </div>
 
           <div class="form-group full-width">
@@ -103,7 +103,7 @@
           <div class="form-group">
             <label>Precio por Noche (Quetzales Q) *</label>
             <input type="number" min="100" [(ngModel)]="pricePerNight" name="pricePerNight" required />
-            <span class="input-hint">Aprox. ${{ (pricePerNight / 7.78).toFixed(0) }} USD</span>
+            <span class="input-hint">El backend calcula el precio en USD con la tasa vigente.</span>
           </div>
           <div class="form-group">
             <label>Tarifa de Limpieza (Q)</label>

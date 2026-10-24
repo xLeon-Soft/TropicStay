@@ -232,6 +232,112 @@
   font-size: 3rem;
 }
 
+.chat-modal {
+  max-width: 620px;
+}
+
+.chat-status {
+  margin: 0.2rem 0 0;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.chat-status i {
+  color: var(--neon-mint);
+}
+
+.chat-thread {
+  min-height: 260px;
+  max-height: 380px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid rgba(78, 155, 143, 0.24);
+  border-radius: var(--radius-md);
+  background: linear-gradient(145deg, #f7fcfa, #fff);
+}
+
+.chat-bubble {
+  align-self: flex-start;
+  max-width: 82%;
+  padding: 0.72rem 0.86rem;
+  border: 1px solid rgba(78, 155, 143, 0.18);
+  border-radius: 4px var(--radius-md) var(--radius-md) var(--radius-md);
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(20, 43, 35, 0.06);
+}
+
+.chat-bubble.is-mine {
+  align-self: flex-end;
+  border-color: rgba(66, 220, 192, 0.45);
+  border-radius: var(--radius-md) 4px var(--radius-md) var(--radius-md);
+  background: var(--primary);
+  color: #fff;
+}
+
+.chat-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.chat-bubble span {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}
+
+.chat-bubble.is-mine span {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chat-empty,
+.chat-loading {
+  min-height: 220px;
+  display: grid;
+  place-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.chat-empty i {
+  color: var(--accent);
+  font-size: 2rem;
+}
+
+.chat-composer {
+  margin-top: 0.9rem;
+}
+
+.chat-composer textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  padding: 0.8rem;
+  border: 1px solid rgba(78, 155, 143, 0.35);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.chat-composer textarea:focus {
+  outline: none;
+  border-color: var(--neon-mint);
+  box-shadow: 0 0 0 3px rgba(66, 220, 192, 0.14);
+}
+
+.chat-error {
+  margin: 0.7rem 0 0;
+  color: #bd3d30;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 @media (max-width: 992px) {
   .host-header-card {
     grid-template-columns: 1fr;

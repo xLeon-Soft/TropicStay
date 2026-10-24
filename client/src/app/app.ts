@@ -19,6 +19,7 @@ export class App {
   constructor() {
     this.router.events.pipe(filter(event => event instanceof NavigationEnd)).subscribe((event) => {
       this.isLoginRoute.set((event as NavigationEnd).urlAfterRedirects.startsWith('/login'));
+      requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }));
     });
   }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -10,6 +10,11 @@ import { ComparisonModalComponent } from '../../components/comparison-modal/comp
 import { Chalet, Review } from '../../models/chalet.model';
 import { ChaletMapComponent } from '../../components/chalet-map/chalet-map';
 import { AuthService } from '../../services/auth.service';
+
+interface CalendarDay {
+  value: string;
+  label: number;
+}
 
 @Component({
   selector: 'app-chalet-detail',
@@ -25,6 +30,7 @@ export class ChaletDetailComponent implements OnInit {
   geoService = inject(GeolocationService);
   compareService = inject(ComparisonService);
   auth = inject(AuthService);
+  private cdr = inject(ChangeDetectorRef);
 
   chalet: Chalet | null = null;
   isLoading = true;
@@ -38,6 +44,10 @@ export class ChaletDetailComponent implements OnInit {
   bookingEmail: string = '';
   bookingPhone: string = '';
   bookingNotes: string = '';
+  showBookingCalendar = false;
+  selectingBookingDate: 'checkIn' | 'checkOut' = 'checkIn';
+  calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  readonly calendarWeekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   isBookingSubmitting = false;
   bookingSuccess = false;
   bookingError = '';
@@ -68,12 +78,88 @@ export class ChaletDetailComponent implements OnInit {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 2);
 
-    this.checkInDate = today.toISOString().split('T')[0];
-    this.checkOutDate = tomorrow.toISOString().split('T')[0];
+    this.checkInDate = this.toDateValue(today);
+    this.checkOutDate = this.toDateValue(tomorrow);
   }
 
   get minBookingDate(): string {
-    return new Date().toISOString().split('T')[0];
+    return this.toDateValue(new Date());
+  }
+
+  get calendarMonthLabel(): string {
+    return this.calendarMonth.toLocaleDateString('es-GT', { month: 'long', year: 'numeric' });
+  }
+
+  get calendarDays(): CalendarDay[] {
+    const year = this.calendarMonth.getFullYear();
+    const month = this.calendarMonth.getMonth();
+    const leadingDays = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    const days: CalendarDay[] = Array.from({ length: leadingDays }, () => ({ value: '', label: 0 }));
+
+    for (let day = 1; day <= totalDays; day++) {
+      days.push({ value: this.toDateValue(new Date(year, month, day)), label: day });
+    }
+
+    while (days.length % 7 !== 0) days.push({ value: '', label: 0 });
+    return days;
+  }
+
+  openBookingCalendar(type: 'checkIn' | 'checkOut'): void {
+    this.selectingBookingDate = type;
+    const selectedDate = type === 'checkIn' ? this.checkInDate : this.checkOutDate;
+    const [year, month] = selectedDate.split('-').map(Number);
+    this.calendarMonth = new Date(year, month - 1, 1);
+    this.showBookingCalendar = true;
+  }
+
+  changeCalendarMonth(offset: number): void {
+    this.calendarMonth = new Date(this.calendarMonth.getFullYear(), this.calendarMonth.getMonth() + offset, 1);
+  }
+
+  selectBookingDay(value: string): void {
+    if (!value || this.isCalendarDayDisabled(value)) return;
+
+    if (this.selectingBookingDate === 'checkIn') {
+      this.checkInDate = value;
+      if (!this.checkOutDate || this.checkOutDate <= value) {
+        this.checkOutDate = this.toDateValue(this.addDays(value, 1));
+      }
+      this.selectingBookingDate = 'checkOut';
+      return;
+    }
+
+    this.checkOutDate = value;
+    this.showBookingCalendar = false;
+  }
+
+  isCalendarDayDisabled(value: string): boolean {
+    if (!value || value < this.minBookingDate) return true;
+    return this.selectingBookingDate === 'checkOut' && value <= this.checkInDate;
+  }
+
+  isDateInSelectedRange(value: string): boolean {
+    return Boolean(value && this.checkInDate && this.checkOutDate && value > this.checkInDate && value < this.checkOutDate);
+  }
+
+  formatBookingDate(value: string): string {
+    return new Date(`${value}T00:00:00`).toLocaleDateString('es-GT', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  }
+
+  private addDays(value: string, days: number): Date {
+    const date = new Date(`${value}T00:00:00`);
+    date.setDate(date.getDate() + days);
+    return date;
+  }
+
+  private toDateValue(date: Date): string {
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${month}-${day}`;
   }
 
   private prefillAuthenticatedUser(): void {
@@ -91,10 +177,12 @@ export class ChaletDetailComponent implements OnInit {
         this.chalet = data;
         this.selectedImage = data.thumbnail || data.images[0];
         this.isLoading = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Error cargando chalet:', err);
         this.isLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -147,11 +235,6 @@ export class ChaletDetailComponent implements OnInit {
     if (!this.chalet?.coordinates?.lat || !this.chalet.coordinates?.lng) return null;
     const km = this.geoService.getDistanceToChalet(this.chalet.coordinates.lat, this.chalet.coordinates.lng);
     return this.geoService.formatDistance(km);
-  }
-
-  get googleMapsDirectionsUrl(): string {
-    if (!this.chalet?.coordinates?.lat || !this.chalet.coordinates?.lng) return '';
-    return this.geoService.getGoogleMapsDirectionsUrl(this.chalet.coordinates.lat, this.chalet.coordinates.lng);
   }
 
   get hostWhatsAppUrl(): string {

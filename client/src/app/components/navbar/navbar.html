@@ -13,11 +13,8 @@
       <a routerLink="/explore" routerLinkActive="active" class="nav-item">
         <span>Explorar</span>
       </a>
-      <a routerLink="/explore" [queryParams]="{category: 'Lago'}" class="nav-item">
-        <span>Atitlán</span>
-      </a>
-      <a routerLink="/explore" [queryParams]="{category: 'Playa'}" class="nav-item">
-        <span>Playas</span>
+      <a routerLink="/messages" routerLinkActive="active" class="nav-item">
+        <span>Mensajes</span>
       </a>
     </nav>
 
@@ -71,6 +68,10 @@
       <a routerLink="/explore" (click)="toggleMenu()" class="mobile-nav-item">
         <i class="fa-solid fa-compass"></i>
         <span>Explorar Chalets de Guatemala</span>
+      </a>
+      <a routerLink="/messages" (click)="toggleMenu()" class="mobile-nav-item">
+        <i class="fa-solid fa-comments"></i>
+        <span>Mensajes</span>
       </a>
       <a routerLink="/explore" [queryParams]="{favorites: 'true'}" (click)="toggleMenu()" class="mobile-nav-item">
         <i class="fa-solid fa-heart text-danger"></i>

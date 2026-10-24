@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface GoogleCredentialResponse {
   credential: string;
@@ -56,9 +57,9 @@ export interface LoginResult {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   // OAuth client IDs are public by design. Never put the client secret in Angular.
-  private readonly googleClientId = '383101839481-no6h3sj1fce5ghgqpsvmcl3n4jj48agu.apps.googleusercontent.com';
+  private readonly googleClientId = environment.googleClientId;
   private readonly storageKey = 'tropicstay_google_user';
-  private readonly apiUrl = 'http://localhost:5000/api/auth/google';
+  private readonly apiUrl = `${environment.apiBaseUrl}/auth/google`;
   private readonly http = inject(HttpClient);
 
   readonly user = signal<AuthenticatedUser | null>(this.restoreUser());

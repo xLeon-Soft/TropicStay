@@ -2,13 +2,14 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { BookingPayload } from '../models/chalet.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookingService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api/bookings';
+  private readonly apiUrl = `${environment.apiBaseUrl}/bookings`;
 
   createBooking(payload: BookingPayload): Observable<any> {
     return this.http.post(this.apiUrl, payload);

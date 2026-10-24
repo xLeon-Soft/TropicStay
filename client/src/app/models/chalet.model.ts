@@ -12,7 +12,6 @@ export interface Host {
   responseTime: string;
   memberSince: string;
   bio?: string;
-  location?: string;
 }
 
 export interface RatingBreakdown {
@@ -43,7 +42,7 @@ export interface Chalet {
   category: 'Lago' | 'Playa' | 'Montaña' | 'Colonial' | 'Selva' | 'Río' | string;
   department: string;
   municipality: string;
-  locationName: string;
+  location: string[];
   description: string;
   pricePerNight: number;
   priceUSD?: number;
@@ -74,6 +73,7 @@ export interface Chalet {
 export interface FilterParams {
   search?: string;
   department?: string;
+  municipality?: string;
   category?: string;
   minPrice?: number;
   maxPrice?: number;

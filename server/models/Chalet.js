@@ -22,10 +22,16 @@ const chaletSchema = new mongoose.Schema({
     required: [true, 'El municipio es obligatorio'],
     trim: true,
   },
-  locationName: {
-    type: String,
-    required: true,
-    trim: true,
+  location: {
+    type: [{
+      type: String,
+      trim: true,
+    }],
+    required: [true, 'La ubicación del chalet es obligatoria'],
+    validate: {
+      validator: (locations) => Array.isArray(locations) && locations.length > 0 && locations.every(location => location.trim()),
+      message: 'La ubicación debe contener al menos un texto válido.',
+    },
   },
   description: {
     type: String,
@@ -124,5 +130,11 @@ const chaletSchema = new mongoose.Schema({
 }, {
   timestamps: true,
 });
+
+chaletSchema.index({ department: 1, category: 1 });
+chaletSchema.index({ category: 1, pricePerNight: 1 });
+chaletSchema.index({ host: 1 });
+chaletSchema.index({ municipality: 1, category: 1 });
+chaletSchema.index({ featured: -1, createdAt: -1 });
 
 module.exports = mongoose.model('Chalet', chaletSchema);

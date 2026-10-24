@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "seed": "node seed/seedData.js"
+    "seed": "node seed/seedData.js",
+    "test:smoke": "node test_integration.js",
+    "migrate:locations": "node scripts/migrateLocationToArray.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
@@ -15,7 +17,8 @@
     "google-auth-library": "^11.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.5.1",
-    "multer": "^2.4.0"
+    "multer": "^2.4.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

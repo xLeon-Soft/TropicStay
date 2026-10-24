@@ -25,7 +25,7 @@ export class PublishChaletComponent {
   category = 'Lago';
   department = 'Sololá';
   municipality = 'San Marcos La Laguna';
-  locationName = 'Lago de Atitlán, Sololá';
+  locationsText = 'Lago de Atitlán, Sololá';
   description = '';
   pricePerNight: number = 2200;
   deposit: number = 500;
@@ -182,10 +182,11 @@ export class PublishChaletComponent {
       category: this.category,
       department: this.department,
       municipality: this.municipality.trim(),
-      locationName: this.locationName.trim() || `${this.municipality}, ${this.department}`,
+      location: this.locationsText.split('\n').map(location => location.trim()).filter(Boolean).length
+        ? this.locationsText.split('\n').map(location => location.trim()).filter(Boolean)
+        : [`${this.municipality}, ${this.department}`],
       description: this.description.trim(),
       pricePerNight: Number(this.pricePerNight),
-      priceUSD: Math.round(Number(this.pricePerNight) / 7.78),
       deposit: Number(this.deposit),
       cleaningFee: Number(this.cleaningFee),
       guestsMax: Number(this.guestsMax),
@@ -230,7 +231,7 @@ export class PublishChaletComponent {
     this.category = 'Lago';
     this.department = 'Sololá';
     this.municipality = 'San Marcos La Laguna';
-    this.locationName = 'Lago de Atitlán, Sololá';
+    this.locationsText = 'Lago de Atitlán, Sololá';
     this.description = '';
     this.pricePerNight = 2200;
     this.deposit = 500;

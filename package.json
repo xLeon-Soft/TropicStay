@@ -5,7 +5,8 @@
   "scripts": {
     "start:server": "cd server && node index.js",
     "start:client": "cd client && ng serve --open",
-    "seed": "cd server && npm run seed"
+    "seed": "cd server && npm run seed",
+    "migrate:locations": "cd server && npm run migrate:locations"
   },
   "keywords": ["angular", "mongodb", "express", "chalets", "guatemala", "tropicstay"],
   "author": "TropicStay",

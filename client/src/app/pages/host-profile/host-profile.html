@@ -55,7 +55,7 @@
       <div class="host-header-right">
         <h1 class="host-full-name">{{ host.name }}</h1>
         <p class="host-location-text">
-          <i class="fa-solid fa-location-dot"></i> {{ host.location || 'Guatemala' }} • Anfitrión en TropicStay desde {{ host.memberSince }}
+          <i class="fa-solid fa-user-check"></i> Anfitrión en TropicStay desde {{ host.memberSince }}
         </p>
 
         <div class="host-biography">
@@ -64,8 +64,8 @@
         </div>
 
         <div class="host-contact-box">
-          <button class="btn-primary" (click)="showMessageModal = true">
-            <i class="fa-solid fa-envelope"></i> Enviar Mensaje
+          <button class="btn-primary" (click)="openChat()">
+            <i class="fa-solid fa-comments"></i> Abrir chat
           </button>
           <a [href]="getWhatsAppLink()" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Chatear por WhatsApp">
             <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp ({{ host.phone || '+502 5555-0000' }})
@@ -90,37 +90,54 @@
       </div>
     </div>
 
-    <!-- Message Modal -->
+    <!-- Internal chat modal -->
     @if (showMessageModal) {
-      <div class="modal-backdrop animate-fade">
-        <div class="modal-card glass-panel">
+      <div class="modal-backdrop animate-fade" (click)="closeChat()">
+        <div class="modal-card chat-modal glass-panel" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <h3>Enviar Mensaje a {{ host.name }}</h3>
-            <button class="close-modal-btn" (click)="showMessageModal = false">&times;</button>
+            <div>
+              <h3>Chat con {{ host.name }}</h3>
+              <p class="chat-status"><i class="fa-solid fa-circle-check"></i> Anfitrión verificado</p>
+            </div>
+            <button class="close-modal-btn" (click)="closeChat()" aria-label="Cerrar chat">&times;</button>
           </div>
 
-          @if (messageSent) {
-            <div class="modal-success animate-fade">
-              <i class="fa-solid fa-circle-check text-primary"></i>
-              <h4>¡Mensaje Enviado con Éxito!</h4>
-              <p>{{ host.name }} suele responder en {{ host.responseTime }}.</p>
-            </div>
-          } @else {
-            <form (ngSubmit)="sendMessage()" class="modal-body">
-              <p class="modal-desc">Escribe tus dudas sobre fechas, normas del chalet o detalles de estancia.</p>
-              <textarea 
-                [(ngModel)]="messageText" 
-                name="msg" 
-                rows="4" 
-                placeholder="Hola {{ host.name }}, tengo una consulta sobre el chalet..."
-                required>
-              </textarea>
-              <div class="modal-actions">
-                <button type="button" class="btn-outline" (click)="showMessageModal = false">Cancelar</button>
-                <button type="submit" class="btn-primary">Continuar en WhatsApp</button>
-              </div>
-            </form>
+          <div class="chat-thread" aria-live="polite">
+            @if (isChatLoading) {
+              <div class="chat-loading"><span class="spinner"></span> Cargando conversación...</div>
+            } @else if (chatMessages.length === 0) {
+              <div class="chat-empty"><i class="fa-regular fa-comments"></i><p>Inicia la conversación. {{ host.name }} suele responder en {{ host.responseTime }}.</p></div>
+            } @else {
+              @for (message of chatMessages; track message._id) {
+                <div class="chat-bubble" [class.is-mine]="message.isMine">
+                  <p>{{ message.content }}</p>
+                  <span>{{ formatMessageTime(message.createdAt) }}</span>
+                </div>
+              }
+            }
+          </div>
+
+          @if (chatError) {
+            <p class="chat-error"><i class="fa-solid fa-circle-exclamation"></i> {{ chatError }}</p>
           }
+
+          <form (ngSubmit)="sendChatMessage()" class="chat-composer">
+            <textarea
+              [(ngModel)]="messageText"
+              name="message"
+              rows="3"
+              maxlength="2000"
+              placeholder="Escribe tu pregunta sobre el chalet..."
+              [disabled]="isSendingMessage"
+              required>
+            </textarea>
+            <div class="modal-actions">
+              <button type="button" class="btn-outline" (click)="closeChat()">Cerrar</button>
+              <button type="submit" class="btn-primary" [disabled]="isSendingMessage || !messageText.trim()">
+                <i class="fa-solid fa-paper-plane"></i> {{ isSendingMessage ? 'Enviando...' : 'Enviar mensaje' }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     }

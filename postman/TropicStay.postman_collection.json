@@ -1,0 +1,81 @@
+{
+  "info": {
+    "_postman_id": "b19b3be3-63b0-4fcf-a6c3-0bfe075eadc9",
+    "name": "TropicStay API - pruebas locales",
+    "description": "Configura baseUrl y token. Obtén token iniciando sesión desde la aplicación Angular; consulta docs/API_POSTMAN.md.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" },
+    { "key": "chaletId", "value": "" },
+    { "key": "bookingId", "value": "" },
+    { "key": "hostId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Público",
+      "item": [
+        { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" } },
+        { "name": "Listar chalets", "request": { "method": "GET", "url": "{{baseUrl}}/chalets" } },
+        { "name": "Filtrar chalets", "request": { "method": "GET", "url": "{{baseUrl}}/chalets?department=Solol%C3%A1&guests=4&minRating=4.5&sort=price-asc" } },
+        { "name": "Departamentos", "request": { "method": "GET", "url": "{{baseUrl}}/chalets/meta/departments" } },
+        { "name": "Ver chalet por ID", "request": { "method": "GET", "url": "{{baseUrl}}/chalets/{{chaletId}}" } },
+        { "name": "Reseñas del chalet", "request": { "method": "GET", "url": "{{baseUrl}}/chalets/{{chaletId}}/reviews" } },
+        { "name": "Listar anfitriones", "request": { "method": "GET", "url": "{{baseUrl}}/hosts" } },
+        { "name": "Anfitrión por ID", "request": { "method": "GET", "url": "{{baseUrl}}/hosts/{{hostId}}" } }
+      ]
+    },
+    {
+      "name": "Autenticado",
+      "item": [
+        {
+          "name": "Crear chalet",
+          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "if (body.data?._id) pm.collectionVariables.set('chaletId', body.data._id);"] } }],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Chalet de prueba Postman\",\n  \"category\": \"Lago\",\n  \"department\": \"Sololá\",\n  \"municipality\": \"Panajachel\",\n  \"locationName\": \"Panajachel, Sololá\",\n  \"description\": \"Propiedad usada para pruebas manuales.\",\n  \"pricePerNight\": 1500,\n  \"guestsMax\": 4,\n  \"bedrooms\": 2,\n  \"beds\": 3,\n  \"bathrooms\": 2,\n  \"images\": [\"https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200\"],\n  \"thumbnail\": \"https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200\",\n  \"amenities\": [\"Wifi de alta velocidad\"],\n  \"rules\": [\"No fumar\"]\n}" },
+            "url": "{{baseUrl}}/chalets"
+          }
+        },
+        {
+          "name": "Actualizar chalet",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"pricePerNight\": 1650,\n  \"status\": \"disponible\"\n}" }, "url": "{{baseUrl}}/chalets/{{chaletId}}"
+          }
+        },
+        {
+          "name": "Agregar reseña",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Reseña creada desde Postman.\",\n  \"cleanliness\": 5,\n  \"location\": 5,\n  \"communication\": 5,\n  \"value\": 5\n}" }, "url": "{{baseUrl}}/chalets/{{chaletId}}/reviews"
+          }
+        },
+        {
+          "name": "Subir imágenes", "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST", "body": { "mode": "formdata", "formdata": [{ "key": "images", "type": "file", "src": "" }] }, "url": "{{baseUrl}}/uploads/images"
+          }
+        },
+        {
+          "name": "Crear reserva",
+          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "if (body.data?._id) pm.collectionVariables.set('bookingId', body.data._id);"] } }],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"chaletId\": \"{{chaletId}}\",\n  \"guestName\": \"Usuario de Prueba\",\n  \"guestEmail\": \"usuario@ejemplo.com\",\n  \"guestPhone\": \"+50255555555\",\n  \"checkIn\": \"2026-11-20\",\n  \"checkOut\": \"2026-11-23\",\n  \"guestsCount\": 2,\n  \"notes\": \"Prueba manual Postman\"\n}" }, "url": "{{baseUrl}}/bookings"
+          }
+        },
+        { "name": "Mis reservas / mis chalets", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/bookings?status=confirmada" } },
+        { "name": "Reserva por ID", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/bookings/{{bookingId}}" } },
+        { "name": "Cancelar reserva", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"status\": \"cancelada\" }" }, "url": "{{baseUrl}}/bookings/{{bookingId}}/status" } },
+        { "name": "Eliminar chalet de prueba", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "DELETE", "url": "{{baseUrl}}/chalets/{{chaletId}}" } }
+      ]
+    }
+  ]
+}

@@ -1,14 +1,23 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, map, shareReplay, tap } from 'rxjs';
 import { Chalet, FilterParams, Review, Host } from '../models/chalet.model';
+import { environment } from '../../environments/environment';
+
+export interface DestinationOption {
+  name: string;
+  categories: string[];
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class ChaletService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5000/api';
+  private readonly apiUrl = environment.apiBaseUrl;
+  private allChalets$?: Observable<Chalet[]>;
+  private destinations$?: Observable<DestinationOption[]>;
+  private hosts$?: Observable<Host[]>;
 
   // State signals
   currency = signal<'GTQ' | 'USD'>('GTQ');
@@ -56,10 +65,20 @@ export class ChaletService {
 
   // API Methods
   getChalets(params?: FilterParams): Observable<Chalet[]> {
+    if (!params || Object.keys(params).length === 0) {
+      this.allChalets$ ??= this.fetchChalets().pipe(shareReplay({ bufferSize: 1, refCount: false }));
+      return this.allChalets$;
+    }
+
+    return this.fetchChalets(params);
+  }
+
+  private fetchChalets(params?: FilterParams): Observable<Chalet[]> {
     let httpParams = new HttpParams();
     if (params) {
       if (params.search) httpParams = httpParams.set('search', params.search);
       if (params.department && params.department !== 'Todos') httpParams = httpParams.set('department', params.department);
+      if (params.municipality && params.municipality !== 'Todos') httpParams = httpParams.set('municipality', params.municipality);
       if (params.category && params.category !== 'Todas') httpParams = httpParams.set('category', params.category);
       if (params.minPrice) httpParams = httpParams.set('minPrice', params.minPrice.toString());
       if (params.maxPrice) httpParams = httpParams.set('maxPrice', params.maxPrice.toString());
@@ -79,7 +98,8 @@ export class ChaletService {
   }
 
   createChalet(chaletData: any): Observable<{ success: boolean; data: Chalet }> {
-    return this.http.post<{ success: boolean; data: Chalet }>(`${this.apiUrl}/chalets`, chaletData);
+    return this.http.post<{ success: boolean; data: Chalet }>(`${this.apiUrl}/chalets`, chaletData)
+      .pipe(tap(() => this.invalidateCatalogCache()));
   }
 
   uploadImages(files: File[]): Observable<{ success: boolean; urls: string[] }> {
@@ -97,13 +117,27 @@ export class ChaletService {
       .pipe(map(res => res.data));
   }
 
+  getDestinations(): Observable<DestinationOption[]> {
+    this.destinations$ ??= this.http
+      .get<{ success: boolean; data: DestinationOption[] }>(`${this.apiUrl}/chalets/meta/destinations`)
+      .pipe(map(res => res.data), shareReplay({ bufferSize: 1, refCount: false }));
+    return this.destinations$;
+  }
+
   getHostById(hostId: string): Observable<Host & { chalets: Chalet[]; chaletsCount: number }> {
     return this.http.get<{ success: boolean; data: Host & { chalets: Chalet[]; chaletsCount: number } }>(`${this.apiUrl}/hosts/${hostId}`)
       .pipe(map(res => res.data));
   }
 
   getHosts(): Observable<Host[]> {
-    return this.http.get<{ success: boolean; data: Host[] }>(`${this.apiUrl}/hosts`)
-      .pipe(map(res => res.data));
+    this.hosts$ ??= this.http.get<{ success: boolean; data: Host[] }>(`${this.apiUrl}/hosts`)
+      .pipe(map(res => res.data), shareReplay({ bufferSize: 1, refCount: false }));
+    return this.hosts$;
+  }
+
+  private invalidateCatalogCache(): void {
+    this.allChalets$ = undefined;
+    this.destinations$ = undefined;
+    this.hosts$ = undefined;
   }
 }
