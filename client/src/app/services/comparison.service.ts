@@ -1,6 +1,7 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { Chalet } from '../models/chalet.model';
 import { GeolocationService } from './geolocation.service';
+import { UiDialogService } from './ui-dialog.service';
 
 export interface ComparisonVerdict {
   bestPriceId: string;
@@ -13,6 +14,7 @@ export interface ComparisonVerdict {
   providedIn: 'root'
 })
 export class ComparisonService {
+  private readonly uiDialog = inject(UiDialogService);
   comparedChalets = signal<Chalet[]>([]);
   isOpenModal = signal<boolean>(false);
 
@@ -32,7 +34,11 @@ export class ComparisonService {
     } else {
       // Agregar si no excede el límite
       if (list.length >= this.maxComparison) {
-        alert(`Puedes comparar un máximo de ${this.maxComparison} chalets a la vez.`);
+        this.uiDialog.notify({
+          tone: 'warning',
+          title: 'Límite de comparación',
+          message: `Puedes comparar un máximo de ${this.maxComparison} chalets a la vez.`,
+        });
         return false;
       }
       this.comparedChalets.set([...list, chalet]);
@@ -58,7 +64,11 @@ export class ComparisonService {
 
   open(): void {
     if (this.comparedChalets().length < 2) {
-      alert('Selecciona al menos 2 chalets para iniciar la comparación.');
+      this.uiDialog.notify({
+        tone: 'info',
+        title: 'Selecciona más chalets',
+        message: 'Selecciona al menos 2 chalets para iniciar la comparación.',
+      });
       return;
     }
     this.isOpenModal.set(true);

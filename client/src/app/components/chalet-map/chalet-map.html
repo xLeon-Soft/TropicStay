@@ -7,9 +7,40 @@
       <i class="fa-solid fa-map"></i> Ver toda Guatemala
     </button>
 
+    @if (targetRouteChalet) {
+      <button
+        type="button"
+        class="map-ctrl-btn"
+        [class.btn-route-toggle]="!activeRouteInfo"
+        [class.btn-route-active]="!!activeRouteInfo"
+        (click)="toggleRoute()"
+        [title]="activeRouteInfo ? 'Ocultar trazo del recorrido' : 'Trazar recorrido desde tu ubicación hasta el chalet'">
+        <i class="fa-solid" [ngClass]="isLoadingRoute ? 'fa-spinner fa-spin' : 'fa-route'"></i>
+        @if (isLoadingRoute) {
+          <span>Trazando recorrido...</span>
+        } @else if (activeRouteInfo) {
+          <span>Ocultar recorrido</span>
+        } @else {
+          <span>Recorrido</span>
+        }
+      </button>
+    }
+
     @if (activeRouteInfo) {
-      <button type="button" class="map-ctrl-btn btn-route-toggle" (click)="fitRoute()" title="Enfocar el recorrido completo">
-        <i class="fa-solid fa-route"></i> Enfocar ruta
+      <button type="button" class="map-ctrl-btn" (click)="fitRoute()" title="Enfocar el recorrido completo">
+        <i class="fa-solid fa-expand"></i> Enfocar ruta
+      </button>
+    }
+
+    @if (showUserLocation) {
+      <button
+        type="button"
+        class="map-ctrl-btn"
+        (click)="focusUserAndTrace()"
+        [disabled]="geoService.isLocating()"
+        title="Detectar mi ubicación actual (GPS) y actualizar recorrido">
+        <i class="fa-solid" [ngClass]="geoService.isLocating() ? 'fa-spinner fa-spin' : 'fa-location-crosshairs'"></i>
+        <span>{{ geoService.isLocating() ? 'Ubicando...' : 'Mi GPS' }}</span>
       </button>
     }
   </div>
@@ -18,7 +49,7 @@
   @if (isLoadingRoute) {
     <div class="route-loading-pill animate-fade">
       <i class="fa-solid fa-spinner fa-spin"></i>
-      <span>Calculando ruta por carretera...</span>
+      <span>Calculando recorrido por carretera...</span>
     </div>
   }
 
@@ -30,12 +61,15 @@
       </div>
       <div class="route-banner-info">
         <div class="route-banner-title">
-          <span class="route-dest-tag">Ruta hacia:</span>
+          <span class="route-dest-tag">Recorrido hacia:</span>
           <strong>{{ activeRouteInfo.chaletTitle }}</strong>
         </div>
         <div class="route-banner-stats">
           <span class="stat-chip"><i class="fa-solid fa-route"></i> {{ activeRouteInfo.distanceKm }} km</span>
           <span class="stat-chip"><i class="fa-solid fa-clock"></i> ~{{ activeRouteInfo.durationFormatted }}</span>
+          @if (activeRouteInfo.isEstimated) {
+            <span class="stat-chip stat-estimated">Trazo directo</span>
+          }
           <span class="stat-origin">desde {{ activeRouteInfo.originName }}</span>
         </div>
       </div>

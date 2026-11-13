@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, tap } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface GoogleCredentialResponse {
@@ -38,9 +38,14 @@ declare global {
 }
 
 export interface AuthenticatedUser {
+  _id?: string;
   name: string;
   email: string;
   picture?: string;
+  role?: 'guest' | 'host' | 'admin' | string;
+  phone?: string;
+  bio?: string;
+  responseTime?: string;
 }
 
 interface LoginResponse {
@@ -54,16 +59,41 @@ export interface LoginResult {
   error?: string;
 }
 
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  role?: 'guest' | 'host';
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   // OAuth client IDs are public by design. Never put the client secret in Angular.
   private readonly googleClientId = environment.googleClientId;
   private readonly storageKey = 'tropicstay_google_user';
-  private readonly apiUrl = `${environment.apiBaseUrl}/auth/google`;
+  private readonly apiUrl = `${environment.apiBaseUrl}/auth`;
   private readonly http = inject(HttpClient);
 
   readonly user = signal<AuthenticatedUser | null>(this.restoreUser());
   readonly isAuthenticated = () => this.user() !== null;
+
+  constructor() {
+    if (this.user() && this.getToken()) {
+      void this.refreshProfile();
+    }
+  }
+
+  getToken(): string | null {
+    try {
+      const raw = sessionStorage.getItem(this.storageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return typeof parsed?.token === 'string' && parsed.token ? parsed.token : null;
+    } catch {
+      return null;
+    }
+  }
 
   renderGoogleButton(container: HTMLElement, onCredential: (response: GoogleCredentialResponse) => void): boolean {
     if (!window.google?.accounts.id) {
@@ -87,17 +117,21 @@ export class AuthService {
     return true;
   }
 
+  private persistSession(login: LoginResponse): void {
+    sessionStorage.setItem(this.storageKey, JSON.stringify({ ...login.user, token: login.token }));
+    this.user.set(login.user);
+  }
+
   async signIn(response: GoogleCredentialResponse): Promise<LoginResult> {
     try {
       const login = await firstValueFrom(
-        this.http.post<LoginResponse>(this.apiUrl, { credential: response.credential })
+        this.http.post<LoginResponse>(`${this.apiUrl}/google`, { credential: response.credential })
       );
       if (!login.success || !login.token || !login.user?.email) {
         return { success: false, error: 'Google no devolvió una sesión válida.' };
       }
 
-      sessionStorage.setItem(this.storageKey, JSON.stringify({ ...login.user, token: login.token }));
-      this.user.set(login.user);
+      this.persistSession(login);
       return { success: true };
     } catch (error: any) {
       return {
@@ -105,6 +139,80 @@ export class AuthService {
         error: error?.error?.message || 'No se pudo conectar con el servidor de acceso.',
       };
     }
+  }
+
+  async signInWithEmail(email: string, password: string): Promise<LoginResult> {
+    try {
+      const login = await firstValueFrom(
+        this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, password })
+      );
+      if (!login.success || !login.token || !login.user?.email) {
+        return { success: false, error: 'No se pudo iniciar sesión.' };
+      }
+      this.persistSession(login);
+      return { success: true };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.error?.message || 'Correo o contraseña incorrectos.',
+      };
+    }
+  }
+
+  async registerWithEmail(payload: RegisterPayload): Promise<LoginResult> {
+    try {
+      const login = await firstValueFrom(
+        this.http.post<LoginResponse>(`${this.apiUrl}/register`, payload)
+      );
+      if (!login.success || !login.token || !login.user?.email) {
+        return { success: false, error: 'No se pudo crear tu cuenta.' };
+      }
+      this.persistSession(login);
+      return { success: true };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.error?.message || 'No se pudo completar el registro.',
+      };
+    }
+  }
+
+  async refreshProfile(): Promise<AuthenticatedUser | null> {
+    try {
+      const storedRaw = sessionStorage.getItem(this.storageKey);
+      if (!storedRaw) return null;
+      const stored = JSON.parse(storedRaw);
+      if (!stored?.token) return null;
+
+      const res = await firstValueFrom(
+        this.http.get<{ success: boolean; user: AuthenticatedUser }>(`${this.apiUrl}/me`)
+      );
+      if (res.success && res.user) {
+        const merged = { ...stored, ...res.user, token: stored.token };
+        sessionStorage.setItem(this.storageKey, JSON.stringify(merged));
+        this.user.set(res.user);
+        return res.user;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  updateProfile(data: Partial<AuthenticatedUser>): Observable<{ success: boolean; message: string; user: AuthenticatedUser }> {
+    return this.http.put<{ success: boolean; message: string; user: AuthenticatedUser }>(`${this.apiUrl}/profile`, data).pipe(
+      tap((res) => {
+        if (res.success && res.user) {
+          try {
+            const stored = JSON.parse(sessionStorage.getItem(this.storageKey) || '{}');
+            sessionStorage.setItem(this.storageKey, JSON.stringify({ ...stored, ...res.user }));
+          } catch {
+            // ignore
+          }
+          this.user.set(res.user);
+        }
+      })
+    );
   }
 
   logout(): void {
@@ -121,5 +229,4 @@ export class AuthService {
       return null;
     }
   }
-
 }

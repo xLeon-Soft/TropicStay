@@ -105,6 +105,19 @@
         }
       </div>
 
+      <!-- Text Search -->
+      <div class="filter-group">
+        <label>Búsqueda por palabra</label>
+        <div class="search-input-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="applyFilters()"
+            placeholder="Ej: Atitlán, muelle, jacuzzi..." />
+        </div>
+      </div>
+
       <!-- Favorites collection filter -->
       <div class="filter-group">
         <label>Mi Colección</label>
@@ -118,8 +131,19 @@
         </button>
       </div>
 
+      <!-- Department Filter -->
       <div class="filter-group">
-        <label>Destino disponible</label>
+        <label>Departamento</label>
+        <select [(ngModel)]="selectedDepartment" (change)="applyFilters()">
+          @for (dept of departments; track dept) {
+            <option [value]="dept">{{ dept }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Destination (Municipality) Filter -->
+      <div class="filter-group">
+        <label>Municipio / Destino</label>
         <select [(ngModel)]="selectedDestination" (change)="applyFilters()">
           @for (destination of destinations; track destination) {
             <option [value]="destination">{{ destination }}</option>
@@ -140,6 +164,41 @@
               {{ cat }}
             </button>
           }
+        </div>
+      </div>
+
+      <!-- Price Range Filter (GTQ) -->
+      <div class="filter-group">
+        <label>Rango de Precio por Noche (Q)</label>
+        <div class="price-range-inputs">
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="minPrice"
+            (change)="applyFilters()"
+            placeholder="Mín Q" />
+          <span>—</span>
+          <input
+            type="number"
+            min="0"
+            [(ngModel)]="maxPrice"
+            (change)="applyFilters()"
+            placeholder="Máx Q" />
+        </div>
+      </div>
+
+      <!-- Availability Dates Filter -->
+      <div class="filter-group">
+        <label>Fechas Disponibles</label>
+        <div class="dates-filter-grid">
+          <div>
+            <small>Llegada</small>
+            <input type="date" [(ngModel)]="checkIn" (change)="applyFilters()" />
+          </div>
+          <div>
+            <small>Salida</small>
+            <input type="date" [(ngModel)]="checkOut" [min]="checkIn" (change)="applyFilters()" />
+          </div>
         </div>
       </div>
 
@@ -199,6 +258,11 @@
           Mostrando <strong>{{ chalets.length }}</strong> chalets disponibles
         </span>
 
+        @if (selectedDepartment !== 'Todos') {
+          <span class="active-badge">
+            Depto: {{ selectedDepartment }} <button (click)="selectedDepartment = 'Todos'; applyFilters()">×</button>
+          </span>
+        }
         @if (selectedDestination !== 'Todos') {
           <span class="active-badge">
             {{ selectedDestination }} <button (click)="selectedDestination = 'Todos'; applyFilters()">×</button>
@@ -207,6 +271,16 @@
         @if (selectedCategory !== 'Todas') {
           <span class="active-badge">
             {{ selectedCategory }} <button (click)="selectedCategory = 'Todas'; applyFilters()">×</button>
+          </span>
+        }
+        @if (minPrice || maxPrice) {
+          <span class="active-badge">
+            Precio: Q{{ minPrice || 0 }} - Q{{ maxPrice || '∞' }} <button (click)="minPrice = null; maxPrice = null; applyFilters()">×</button>
+          </span>
+        }
+        @if (checkIn && checkOut) {
+          <span class="active-badge">
+            📅 {{ checkIn }} a {{ checkOut }} <button (click)="checkIn = ''; checkOut = ''; applyFilters()">×</button>
           </span>
         }
         @if (showFavoritesOnly) {
@@ -327,7 +401,7 @@
               <img [src]="item.thumbnail || item.images[0]" [alt]="item.title" class="dock-thumb" />
               <div class="dock-item-details">
                 <span class="dock-item-title">{{ item.title }}</span>
-                <span class="dock-item-price">Q{{ item.pricePerNight.toLocaleString() }} / noche</span>
+                <span class="dock-item-price">{{ chaletService.formatPrice(item.pricePerNight, item.priceUSD) }} / noche</span>
               </div>
               <button 
                 type="button" 

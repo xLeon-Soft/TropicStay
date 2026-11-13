@@ -1,9 +1,9 @@
-# API y pruebas manuales de TropicStay
+# API y pruebas manuales en Postman — TropicStay
 
 ## 1. Preparar el entorno
 
-1. Copia `server/.env.example` como `server/.env` y configura `MONGODB_URI`, `JWT_SECRET` y `GOOGLE_CLIENT_ID`.
-2. Con MongoDB iniciado, ejecuta en dos terminales:
+1. Verifica `server/.env` con `MONGODB_URI`, `JWT_SECRET` y `GOOGLE_CLIENT_ID`.
+2. Con MongoDB iniciado, arranca backend y frontend desde la raíz:
 
    ```powershell
    npm run seed          # opcional: reinicia e inserta datos de muestra
@@ -11,105 +11,71 @@
    npm run start:client
    ```
 
-3. Comprueba `GET http://localhost:5000/api/health`. Debe devolver HTTP 200, `success: true` y `status: "ok"`.
+3. Comprueba `GET http://localhost:5000/api/health`. Debe devolver HTTP `200`, `status: "ok"` y `database: "connected"`.
+4. También puedes abrir la documentación Swagger en `http://localhost:5000/api-docs`.
 
-El cliente Angular usa `/api`; el archivo `client/proxy.conf.json` lo redirige a `http://localhost:5000` durante desarrollo. No hay que cambiar URLs en los servicios del frontend.
+## 2. Autenticación rápida para Postman (sin copiar tokens manuales)
 
-## 2. Autenticación para Postman
+Las colecciones actualizadas incluyen solicitudes automáticas para **Anfitrión** (`hostToken` / `token`) y **Huésped** (`guestToken`) mediante correo y contraseña:
 
-Las operaciones que escriben datos necesitan el encabezado:
+- `POST /api/auth/register` (`name`, `email`, `password`, `phone`, `role`: `"host" | "guest"`)
+- `POST /api/auth/login` (`email`, `password`)
+- `POST /api/auth/google` (`credential` — Google ID token)
+- `GET /api/auth/me` (perfil autenticado)
+- `PUT /api/auth/profile` (actualizar `name`, `phone`, `bio`, `responseTime`, `avatar`)
+- `GET /api/auth/avatar/:userId` (proxy seguro de avatar)
 
-```http
-Authorization: Bearer <token>
-```
-
-El proyecto usa Google Sign-In, por lo que la manera segura de obtener el token de prueba es:
-
-1. Abre `http://localhost:4200/login` e inicia sesión con Google.
-2. En las herramientas de desarrollo del navegador abre **Application > Session Storage > http://localhost:4200**.
-3. Copia el campo `token` dentro de `tropicstay_google_user`.
-4. En Postman importa la colección y establece la variable `token`.
-
-No se creó un usuario, contraseña o token de prueba oculto. Así las pruebas usan el mismo mecanismo que el frontend. Un token vence a las 8 horas.
-
-El endpoint que utiliza el frontend es `POST /api/auth/google` con el cuerpo `{ "credential": "<Google ID token>" }`. Normalmente no se llama a mano desde Postman porque el ID token lo obtiene el botón oficial de Google; el token JWT devuelto por ese endpoint es el que se coloca en la variable `token` de la colección.
+> Importante: un propietario no puede reservar ni dejar reseñas en su propio chalet (`400` / `403`). Por eso las colecciones guardan **`hostToken`** para publicar/editar chalets y confirmar citas o reservas, y **`guestToken`** para pedir citas, reservar, reseñar y chatear.
 
 ## 3. Consultas públicas
 
-| Método | Ruta | Consulta disponible |
+| Método | Ruta | Descripción / Parámetros |
 | --- | --- | --- |
-| GET | `/api/health` | Estado de API y hora. |
-| GET | `/api/chalets` | `search`, `department`, `category`, `minPrice`, `maxPrice`, `guests`, `minRating`, `amenities` (separadas por coma), `sort=price-asc|price-desc|rating-desc`. |
-| GET | `/api/chalets/:id` | Chalet, anfitrión y reseñas. |
-| GET | `/api/chalets/:id/reviews` | Reseñas de un chalet. |
+| GET | `/api/health` | Estado de API, MongoDB y clientes SSE conectados. |
+| GET | `/api/currency/usd?gtq=2800` | Tipo de cambio y conversión GTQ → USD. |
+| GET | `/api/chalets` | Filtros: `search`, `department`, `municipality`, `category`, `minPrice`, `maxPrice`, `guests`, `minRating`, `amenities`, `checkIn`, `checkOut`, `sort`. |
 | GET | `/api/chalets/meta/departments` | Departamentos con chalets registrados. |
-| GET | `/api/hosts` | Todos los anfitriones. |
-| GET | `/api/hosts/:id` | Anfitrión y sus chalets. |
+| GET | `/api/chalets/meta/destinations` | Municipios/destinos con chalets registrados. |
+| GET | `/api/chalets/:id` | Detalle completo del chalet, anfitrión, reseñas y fechas ocupadas. |
+| GET | `/api/chalets/:id/booked-dates` | Rangos de fechas reservadas (`confirmada` o `pendiente`). |
+| GET | `/api/chalets/:id/reviews` | Reseñas del chalet. |
+| GET | `/api/hosts` | Lista de anfitriones. |
+| GET | `/api/hosts/:id` | Perfil del anfitrión y sus chalets. |
+| GET | `/api/events/public-stream` | Stream SSE público para cambios de chalet en tiempo real. |
 
-Ejemplos:
+## 4. Operaciones autenticadas (escriben en MongoDB)
 
-```http
-GET /api/chalets?department=Sololá&guests=4&minRating=4.5&sort=price-asc
-GET /api/chalets?category=Lago&amenities=Wifi%20de%20alta%20velocidad,Piscina%20privada
-GET /api/chalets?search=Atitlán&minPrice=1000&maxPrice=3000
-```
-
-## 4. Operaciones autenticadas
-
-| Método | Ruta | Quién puede usarla |
+| Método | Ruta | Quién puede usarla / Detalles |
 | --- | --- | --- |
-| POST | `/api/chalets` | Usuario autenticado. Queda como propietario/anfitrión del chalet. |
-| PUT | `/api/chalets/:id` | Propietario o admin. |
-| DELETE | `/api/chalets/:id` | Propietario o admin. Elimina también sus reseñas. |
-| POST | `/api/uploads/images` | Usuario autenticado; `form-data`, campo `images`, hasta 10 JPG/PNG/WEBP/GIF de 8 MB. |
-| POST | `/api/chalets/:id/reviews` | Usuario autenticado; la identidad se toma del token. |
-| POST | `/api/bookings` | Usuario autenticado. Valida fechas, capacidad y solapamiento. |
-| GET | `/api/bookings` | Huésped: sus reservas. Anfitrión: también reservas de sus chalets. Filtros `status` y `chaletId`. |
-| GET | `/api/bookings/:id` | Huésped de la reserva, anfitrión del chalet o admin. |
-| PATCH | `/api/bookings/:id/status` | Huésped solo puede cancelar; anfitrión/admin puede cambiar estado. |
+| POST | `/api/chalets` | Anfitrión (`hostToken`). Acepta `location` como arreglo de strings y calcula `priceUSD`. |
+| PUT | `/api/chalets/:id` | Propietario o admin. Permite cambiar `status` (`disponible`, `reservado`, `mantenimiento`) con broadcast SSE inmediato. |
+| DELETE | `/api/chalets/:id` | Propietario o admin. Elimina chalet y sus reseñas. |
+| POST | `/api/uploads/images` | Autenticado; `form-data`, campo `images` (hasta 10 JPG/PNG/WEBP/GIF de 8 MB). |
+| POST | `/api/chalets/:id/reviews` | Huésped autenticado (`guestToken`); no puede reseñar su propio chalet. |
+| POST | `/api/bookings` | Huésped (`guestToken`). Soporta `bookingType: "cita"` (con `visitTime`) y `"reserva"`. |
+| GET | `/api/bookings` | Mis reservas/citas (huésped) o recibidas (anfitrión). Filtros `status`, `chaletId`. |
+| GET | `/api/bookings/summary` | Contador de solicitudes pendientes del anfitrión. |
+| GET | `/api/bookings/:id` | Huésped de la solicitud, anfitrión o admin. |
+| PATCH | `/api/bookings/:id/status` | Anfitrión confirma (`confirmada`) o cancela (`cancelada`); huésped solo cancela. |
+| GET | `/api/messages/eligibility/:userId` | Verifica si existe cita confirmada para chatear (`?chaletId=`). |
+| POST | `/api/messages` | Envía mensaje interno en plataforma (`recipientId`, `chaletId`, `content`). |
+| GET | `/api/messages/conversations` | Lista todos los chats habilitados por cita aceptada. |
+| GET | `/api/messages/with/:userId` | Historial del hilo con otro usuario y marca mensajes como leídos. |
+| GET | `/api/messages/unread-count` | Cantidad de mensajes sin leer. |
+| GET | `/api/events/stream?token=...` | Stream SSE autenticado (mensajes, lectura, reservas, citas y estados de chalet). |
 
-Ejemplo mínimo para crear chalet:
+## 5. Colección única en `postman/`
 
-```json
-{
-  "title": "Chalet de prueba frente al lago",
-  "category": "Lago",
-  "department": "Sololá",
-  "municipality": "Panajachel",
-  "location": ["Panajachel, Sololá"],
-  "description": "Propiedad usada solamente para pruebas manuales.",
-  "pricePerNight": 1500,
-  "guestsMax": 4,
-  "bedrooms": 2,
-  "beds": 3,
-  "bathrooms": 2,
-  "images": ["https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200"],
-  "thumbnail": "https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200",
-  "amenities": ["Wifi de alta velocidad", "Piscina privada"],
-  "rules": ["No fumar"]
-}
-```
+Importa el archivo único [TropicStay.postman_collection.json](../postman/TropicStay.postman_collection.json) en Postman:
 
-Ejemplo de reserva:
+- **Carpetas 1 a 7 (`01` a `39`)**: secuencia ordenada de principio a fin lista para ejecutar con **Collection Runner**. Registra anfitrión y huésped, consulta catálogos, crea el chalet en MongoDB, cambia sus estados (`reservado`, `mantenimiento`, `disponible`), pide y acepta una cita, prueba el chat interno, crea/confirma/cancela reservas, publica reseña y limpia el chalet de prueba (desmarca `39` si deseas conservarlo en tu base de datos).
+- **Carpeta 8 (Uso Manual)**: endpoints que requieren archivo adjunto (`POST /api/uploads/images`), credencial externa (`POST /api/auth/google`) o conexiones persistentes (`GET /api/events/stream`, `GET /api/events/public-stream`).
 
-```json
-{
-  "chaletId": "{{chaletId}}",
-  "guestName": "Nombre de prueba",
-  "guestEmail": "correo@ejemplo.com",
-  "guestPhone": "+50255555555",
-  "checkIn": "2026-11-20",
-  "checkOut": "2026-11-23",
-  "guestsCount": 2,
-  "notes": "Reserva de prueba desde Postman"
-}
-```
-
-Importa [TropicStay.postman_collection.json](../postman/TropicStay.postman_collection.json) en Postman. Ejecuta primero **Crear chalet**: el script de prueba guarda su ID en `chaletId`; después puedes ejecutar reserva, reseña, consulta, actualización y borrado.
-
-También está disponible una comprobación automática de solo lectura para los endpoints públicos:
+## 6. Pruebas automáticas de verificación
 
 ```powershell
 cd server
+npm test
+npm run test:e2e
 npm run test:smoke
 ```

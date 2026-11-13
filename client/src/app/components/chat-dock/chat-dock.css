@@ -1,0 +1,405 @@
+.chat-dock-pill {
+  position: fixed;
+  right: 1.4rem;
+  bottom: 1.25rem;
+  z-index: 2400;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 1.05rem;
+  border: 1px solid rgba(66, 220, 192, 0.35);
+  border-radius: 999px;
+  background: #102a23;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 14px 34px rgba(10, 34, 28, 0.32);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chat-dock-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px rgba(10, 34, 28, 0.4);
+}
+
+.pill-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 1.05rem;
+  color: var(--neon-mint, #42dcc0);
+}
+
+.pill-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.pill-avatars {
+  display: flex;
+  align-items: center;
+  margin-left: 0.15rem;
+}
+
+.pill-avatars img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #102a23;
+  margin-left: -7px;
+}
+
+.pill-avatars img:first-child {
+  margin-left: 0;
+}
+
+.chat-dock-window {
+  position: fixed;
+  right: 1.4rem;
+  bottom: 1.25rem;
+  z-index: 2450;
+  width: min(370px, calc(100vw - 1.5rem));
+  height: min(500px, calc(100vh - 5.5rem));
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid rgba(16, 42, 35, 0.14);
+  box-shadow: 0 22px 54px rgba(10, 34, 28, 0.28);
+}
+
+.dock-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.78rem 0.9rem;
+  background: #102a23;
+  color: #ffffff;
+}
+
+.dock-title-group,
+.dock-thread-partner {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.dock-title-group h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.dock-unread-chip {
+  padding: 0.1rem 0.48rem;
+  border-radius: 999px;
+  background: var(--neon-mint, #42dcc0);
+  color: #0b241d;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.dock-thread-partner img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--neon-mint, #42dcc0);
+  flex-shrink: 0;
+}
+
+.dock-partner-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dock-partner-meta strong {
+  font-size: 0.86rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-partner-meta small {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.74);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dock-icon-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dock-icon-btn:hover {
+  background: rgba(66, 220, 192, 0.26);
+}
+
+.dock-chalet-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  background: #f4f9f7;
+  border-bottom: 1px solid rgba(16, 42, 35, 0.08);
+  font-size: 0.75rem;
+  color: #1d3c34;
+}
+
+.dock-chalet-strip span {
+  flex: 1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-chalet-strip a {
+  font-weight: 800;
+  color: var(--primary, #0d5244);
+  text-decoration: none;
+}
+
+.dock-body {
+  flex: 1;
+  overflow-y: auto;
+  background: #fafcfb;
+}
+
+.dock-list-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.dock-conv-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.9rem;
+  border: 0;
+  border-bottom: 1px solid rgba(16, 42, 35, 0.07);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dock-conv-item:hover {
+  background: #effaf6;
+}
+
+.dock-conv-item img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.dock-conv-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.dock-conv-copy strong {
+  font-size: 0.85rem;
+  color: #102a23;
+}
+
+.dock-conv-chalet {
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--primary, #0d5244);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-conv-copy small {
+  font-size: 0.74rem;
+  color: #5f706b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dock-unread-dot {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--primary, #0d5244);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+}
+
+.dock-thread-body {
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dock-bubble {
+  align-self: flex-start;
+  max-width: 80%;
+  padding: 0.55rem 0.82rem;
+  border-radius: 16px 16px 16px 4px;
+  background: #e9f1ee;
+  color: #102a23;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.dock-bubble.is-mine {
+  align-self: flex-end;
+  border-radius: 16px 16px 4px 16px;
+  background: linear-gradient(135deg, #0d5244, #147a66);
+  color: #ffffff;
+}
+
+.dock-bubble p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.dock-bubble time {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.65rem;
+  opacity: 0.72;
+}
+
+.dock-empty,
+.dock-locked-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.45rem;
+  padding: 1.6rem 1.2rem;
+  color: #536660;
+}
+
+.dock-empty i,
+.dock-locked-state i {
+  font-size: 1.7rem;
+  color: var(--primary, #0d5244);
+}
+
+.dock-empty p,
+.dock-locked-state p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.dock-explore-link {
+  margin-top: 0.4rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  background: var(--primary, #0d5244);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dock-error {
+  padding: 0.45rem 0.85rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.dock-composer {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.75rem;
+  border-top: 1px solid rgba(16, 42, 35, 0.1);
+  background: #ffffff;
+}
+
+.dock-composer input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.56rem 0.9rem;
+  border: 1px solid rgba(16, 42, 35, 0.18);
+  border-radius: 999px;
+  background: #f6faf8;
+  font: inherit;
+  font-size: 0.84rem;
+}
+
+.dock-composer input:focus {
+  outline: none;
+  border-color: var(--primary, #0d5244);
+  background: #fff;
+}
+
+.dock-composer button {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--primary, #0d5244);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.dock-composer button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+

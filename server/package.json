@@ -7,6 +7,8 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "seed": "node seed/seedData.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e_realtime_flow.js",
     "test:smoke": "node test_integration.js",
     "migrate:locations": "node scripts/migrateLocationToArray.js"
   },

@@ -1,0 +1,201 @@
+@if (shouldShowDock) {
+  @if (!chatWidget.isOpen()) {
+    <button
+      type="button"
+      class="chat-dock-pill"
+      (click)="toggleDock()"
+      aria-label="Abrir mensajes del sistema">
+      <span class="pill-icon-wrap">
+        <i class="fa-regular fa-paper-plane"></i>
+        @if (realtime.unreadMessages() > 0) {
+          <span class="pill-badge">{{ realtime.unreadMessages() }}</span>
+        }
+      </span>
+      <span class="pill-label">Mensajes</span>
+      @if (avatarPreviews().length > 0) {
+        <span class="pill-avatars" aria-hidden="true">
+          @for (conv of avatarPreviews(); track conv.partner._id) {
+            <img [src]="conv.partner.avatar | safeAvatar:conv.partner._id:conv.partner.name" [alt]="conv.partner.name" appAvatarFallback />
+          }
+        </span>
+      }
+    </button>
+  } @else {
+    <section class="chat-dock-window animate-fade" aria-label="Chat rápido TropicStay">
+      @if (!chatWidget.activePartnerId()) {
+        <!-- Mini Conversation List View -->
+        <header class="dock-header">
+          <div class="dock-title-group">
+            <i class="fa-regular fa-comments"></i>
+            <h3>Mensajes</h3>
+            @if (realtime.unreadMessages() > 0) {
+              <span class="dock-unread-chip">{{ realtime.unreadMessages() }}</span>
+            }
+          </div>
+          <div class="dock-header-actions">
+            <button
+              type="button"
+              class="dock-icon-btn"
+              (click)="expandFullChat()"
+              title="Ampliar chat en página completa"
+              aria-label="Ampliar chat en página completa">
+              <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+            </button>
+            <button
+              type="button"
+              class="dock-icon-btn"
+              (click)="chatWidget.minimize()"
+              title="Minimizar chat"
+              aria-label="Minimizar chat">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </header>
+
+        <div class="dock-body dock-list-body">
+          @if (isListLoading()) {
+            <div class="dock-empty">Cargando conversaciones...</div>
+          } @else if (conversations().length === 0) {
+            <div class="dock-empty">
+              <i class="fa-regular fa-calendar-check"></i>
+              <strong>Sin chats habilitados todavía</strong>
+              <p>Para chatear con un propietario, solicita primero una cita en el chalet. Se habilitará automáticamente cuando la acepte.</p>
+              <a routerLink="/explore" (click)="chatWidget.minimize()" class="dock-explore-link">Explorar chalets</a>
+            </div>
+          } @else {
+            @for (conv of conversations(); track conv.partner._id) {
+              <button type="button" class="dock-conv-item" (click)="openConversation(conv)">
+                <img
+                  [src]="conv.partner.avatar | safeAvatar:conv.partner._id:conv.partner.name"
+                  [alt]="conv.partner.name"
+                  appAvatarFallback />
+                <span class="dock-conv-copy">
+                  <strong>{{ conv.partner.name }}</strong>
+                  @if (conv.chalet) {
+                    <span class="dock-conv-chalet">{{ conv.chalet.title }}</span>
+                  }
+                  <small>
+                    @if (conv.lastMessage) {
+                      {{ conv.lastMessage.isMine ? 'Tú: ' : '' }}{{ conv.lastMessage.content }}
+                    } @else {
+                      Cita aceptada • Escribe ahora
+                    }
+                  </small>
+                </span>
+                @if (conv.unreadCount > 0) {
+                  <span class="dock-unread-dot">{{ conv.unreadCount }}</span>
+                }
+              </button>
+            }
+          }
+        </div>
+      } @else {
+        <!-- Active Thread View -->
+        <header class="dock-header">
+          <div class="dock-thread-partner">
+            <button
+              type="button"
+              class="dock-icon-btn"
+              (click)="backToList()"
+              title="Volver a conversaciones"
+              aria-label="Volver a conversaciones">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            @if (selectedPartner(); as partner) {
+              <img
+                [src]="partner.avatar | safeAvatar:partner._id:partner.name"
+                [alt]="partner.name"
+                appAvatarFallback />
+              <div class="dock-partner-meta">
+                <strong>{{ partner.name }}</strong>
+                <small>{{ selectedChalet()?.title || 'Chat verificado TropicStay' }}</small>
+              </div>
+            } @else {
+              <div class="dock-partner-meta">
+                <strong>Conversación</strong>
+              </div>
+            }
+          </div>
+
+          <div class="dock-header-actions">
+            <button
+              type="button"
+              class="dock-icon-btn"
+              (click)="expandFullChat()"
+              title="Ampliar chat completo"
+              aria-label="Ampliar chat completo">
+              <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+            </button>
+            <button
+              type="button"
+              class="dock-icon-btn"
+              (click)="chatWidget.minimize()"
+              title="Cerrar ventana"
+              aria-label="Cerrar ventana">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </header>
+
+        @if (selectedChalet(); as chalet) {
+          <div class="dock-chalet-strip">
+            <i class="fa-solid fa-house"></i>
+            <span>{{ chalet.title }}</span>
+            <a [routerLink]="['/chalet', chalet._id]" (click)="chatWidget.minimize()">Ver</a>
+          </div>
+        }
+
+        <div #dockThread class="dock-body dock-thread-body" aria-live="polite">
+          @if (isThreadLoading()) {
+            <div class="dock-empty">Cargando mensajes...</div>
+          } @else if (!chatEnabled()) {
+            <div class="dock-locked-state">
+              <i class="fa-solid fa-lock"></i>
+              <strong>Chat aún no habilitado</strong>
+              @if (appointmentStatus() === 'pendiente') {
+                <p>Tu cita está pendiente de aprobación. Apenas el propietario la acepte podrás chatear aquí.</p>
+              } @else {
+                <p>Debes solicitar una cita y esperar que el propietario la acepte para iniciar este chat.</p>
+              }
+              <a routerLink="/bookings" (click)="chatWidget.minimize()" class="dock-explore-link">Ver Mis Citas</a>
+            </div>
+          } @else if (messages().length === 0) {
+            <div class="dock-empty">
+              <i class="fa-regular fa-paper-plane"></i>
+              <strong>¡Cita aceptada!</strong>
+              <p>Escribe tu primer mensaje para coordinar los detalles directamente dentro de la plataforma.</p>
+            </div>
+          } @else {
+            @for (msg of messages(); track msg._id) {
+              <div class="dock-bubble" [class.is-mine]="msg.isMine">
+                <p>{{ msg.content }}</p>
+                <time>{{ formatShortTime(msg.createdAt) }}</time>
+              </div>
+            }
+          }
+        </div>
+
+        @if (error()) {
+          <div class="dock-error">{{ error() }}</div>
+        }
+
+        @if (chatEnabled()) {
+          <form class="dock-composer" (ngSubmit)="sendMessage()">
+            <input
+              type="text"
+              [(ngModel)]="draft"
+              name="dockDraft"
+              maxlength="2000"
+              placeholder="Enviar mensaje..."
+              (keydown)="onComposerKeydown($event)"
+              [disabled]="isSending()"
+              autocomplete="off" />
+            <button type="submit" [disabled]="isSending() || !draft.trim()" aria-label="Enviar mensaje">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </form>
+        }
+      }
+    </section>
+  }
+}

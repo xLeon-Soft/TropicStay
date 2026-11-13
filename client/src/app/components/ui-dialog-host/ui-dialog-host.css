@@ -1,0 +1,278 @@
+.ts-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3200;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(12, 34, 28, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.ts-dialog-card {
+  position: relative;
+  width: min(470px, 100%);
+  padding: 1.75rem;
+  background: linear-gradient(165deg, #ffffff 0%, #fbf8f3 100%);
+  border: 1px solid rgba(13, 82, 68, 0.16);
+  border-radius: 24px;
+  box-shadow: 0 28px 65px rgba(10, 38, 31, 0.28);
+}
+
+.ts-dialog-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(13, 82, 68, 0.12);
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--text-muted, #5c6b66);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.ts-dialog-close:hover {
+  background: #f3f7f5;
+  color: var(--text-main, #122620);
+}
+
+.ts-dialog-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-right: 2rem;
+}
+
+.ts-dialog-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 1.35rem;
+  background: rgba(13, 82, 68, 0.11);
+  color: var(--primary, #0d5244);
+}
+
+.ts-dialog-icon-wrap[data-tone='danger'] {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.ts-dialog-icon-wrap[data-tone='warning'] {
+  background: #fff7ed;
+  color: #d97706;
+  border: 1px solid #fed7aa;
+}
+
+.ts-dialog-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(13, 82, 68, 0.08);
+  color: var(--primary, #0d5244);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ts-dialog-card[data-tone='danger'] .ts-dialog-badge {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.ts-dialog-title {
+  margin: 0.35rem 0 0;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--text-main, #122620);
+}
+
+.ts-dialog-message {
+  margin: 1.1rem 0 0;
+  font-size: 0.96rem;
+  line-height: 1.55;
+  color: var(--text-main, #253631);
+}
+
+.ts-dialog-subtitle {
+  margin: 0.85rem 0 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(13, 82, 68, 0.06);
+  color: var(--primary, #0d5244);
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.ts-dialog-actions {
+  margin-top: 1.45rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.ts-btn-cancel,
+.ts-btn-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.72rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.ts-btn-cancel {
+  border: 1px solid rgba(13, 82, 68, 0.2);
+  background: #ffffff;
+  color: var(--text-main, #122620);
+}
+
+.ts-btn-cancel:hover {
+  background: #f5f7f6;
+}
+
+.ts-btn-confirm {
+  border: 0;
+  background: var(--primary, #0d5244);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(13, 82, 68, 0.24);
+}
+
+.ts-btn-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(13, 82, 68, 0.3);
+}
+
+.ts-btn-confirm[data-tone='danger'] {
+  background: #dc2626;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.26);
+}
+
+.ts-btn-confirm[data-tone='danger']:hover {
+  background: #b91c1c;
+}
+
+.ts-btn-confirm[data-tone='warning'] {
+  background: var(--accent, #d97736);
+  box-shadow: 0 8px 20px rgba(217, 119, 54, 0.28);
+}
+
+.ts-toast-stack {
+  position: fixed;
+  top: 5.25rem;
+  right: 1.25rem;
+  z-index: 3100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: min(370px, calc(100vw - 2rem));
+}
+
+.ts-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(13, 82, 68, 0.16);
+  border-left: 5px solid var(--primary, #0d5244);
+  box-shadow: 0 18px 40px rgba(10, 40, 34, 0.18);
+}
+
+.ts-toast[data-tone='success'] {
+  border-left-color: #12b76a;
+}
+
+.ts-toast[data-tone='error'] {
+  border-left-color: #dc2626;
+}
+
+.ts-toast[data-tone='warning'] {
+  border-left-color: var(--accent, #d97736);
+}
+
+.ts-toast-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: rgba(13, 82, 68, 0.1);
+  color: var(--primary, #0d5244);
+}
+
+.ts-toast-icon[data-tone='success'] {
+  background: #ecfdf3;
+  color: #067647;
+}
+
+.ts-toast-icon[data-tone='error'] {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.ts-toast-icon[data-tone='warning'] {
+  background: #fff7ed;
+  color: #d97736;
+}
+
+.ts-toast-copy {
+  flex: 1;
+}
+
+.ts-toast-copy strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #101828;
+}
+
+.ts-toast-copy p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.38;
+  color: #475467;
+}
+
+.ts-toast-close {
+  border: 0;
+  background: transparent;
+  color: #667085;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+

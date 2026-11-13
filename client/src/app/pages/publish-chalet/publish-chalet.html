@@ -3,8 +3,12 @@
     <span class="badge badge-superhost">
       <i class="fa-solid fa-plus-circle"></i> Portal de Anfitriones
     </span>
-    <h1>Publica tu Chalet en TropicStay Guatemala</h1>
-    <p>Completa los detalles de tu propiedad para comenzar a recibir solicitudes de huéspedes de todo el país.</p>
+    <h1>{{ isEditMode ? 'Editar mi Chalet en TropicStay' : 'Publica tu Chalet en TropicStay Guatemala' }}</h1>
+    <p>
+      {{ isEditMode
+        ? 'Actualiza los detalles, precios, ubicación en el mapa o tus datos de contacto como anfitrión.'
+        : 'Completa los detalles de tu propiedad y tus datos de contacto para recibir reservas y mensajes directos de huéspedes.' }}
+    </p>
   </div>
 
   @if (publishSuccess) {
@@ -12,8 +16,8 @@
       <div class="success-icon-large">
         <i class="fa-solid fa-circle-check"></i>
       </div>
-      <h2>¡Tu Chalet fue Publicado con Éxito!</h2>
-      <p>La información ha sido guardada en la base de datos MongoDB y ya se encuentra visible en el catálogo de chalets de Guatemala.</p>
+      <h2>{{ isEditMode ? '¡Tu Chalet fue Actualizado con Éxito!' : '¡Tu Chalet fue Publicado con Éxito!' }}</h2>
+      <p>La información y tus datos de anfitrión han sido guardados en MongoDB y ya están visibles para que los viajeros puedan reservar y hablar contigo.</p>
       
       <div class="success-actions">
         <button class="btn-primary" (click)="viewPublishedChalet()">
@@ -49,7 +53,7 @@
 
           <div class="form-group">
             <label>Departamento de Guatemala *</label>
-            <select [(ngModel)]="department" name="department">
+            <select [(ngModel)]="department" (ngModelChange)="onDepartmentChange()" name="department">
               @for (dept of departmentsList; track dept) {
                 <option [value]="dept">{{ dept }}</option>
               }
@@ -62,7 +66,16 @@
           </div>
 
           <div class="form-group">
-            <label>Ubicaciones descriptivas *</label>
+            <label>Estado de Disponibilidad</label>
+            <select [(ngModel)]="status" name="status">
+              <option value="disponible">🟢 Disponible para reservar</option>
+              <option value="reservado">🟡 Reservado</option>
+              <option value="mantenimiento">🔴 En mantenimiento</option>
+            </select>
+          </div>
+
+          <div class="form-group full-width">
+            <label>Ubicaciones descriptivas (Una por línea) *</label>
             <textarea [(ngModel)]="locationsText" name="locationsText" rows="2" placeholder="Ej: Orilla del Lago de Atitlán, Sololá&#10;Muelle privado" required></textarea>
           </div>
 
@@ -73,9 +86,55 @@
         </div>
       </div>
 
-      <!-- 2. Capacidad y Distribución -->
+      <!-- 2. Ubicación Exacta en el Mapa de Guatemala -->
       <div class="form-section">
-        <h3 class="section-heading"><i class="fa-solid fa-bed"></i> 2. Capacidad y Distribución</h3>
+        <div class="picker-header-row">
+          <div>
+            <h3 class="section-heading"><i class="fa-solid fa-map-location-dot"></i> 2. Punto Exacto en el Mapa (Coordenadas GPS)</h3>
+            <p class="picker-sub">Haz clic en el mapa para colocar el pin exacto de tu chalet y calcular las rutas de viaje correctamente.</p>
+          </div>
+          <button type="button" class="btn-outline btn-sm" (click)="useCurrentGpsForChalet()">
+            <i class="fa-solid fa-location-crosshairs"></i> Usar mi GPS actual
+          </button>
+        </div>
+
+        <div #pickerMapContainer class="location-picker-map"></div>
+
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Latitud (Norte)</label>
+            <input type="number" step="0.0001" [(ngModel)]="lat" (change)="onCoordinatesManualChange()" name="lat" required />
+          </div>
+          <div class="form-group">
+            <label>Longitud (Oeste)</label>
+            <input type="number" step="0.0001" [(ngModel)]="lng" (change)="onCoordinatesManualChange()" name="lng" required />
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Datos de Contacto de Quien lo Da en Alquiler (Anfitrión) -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-user-check"></i> 3. Datos de la Persona que da en Alquiler (Anfitrión)</h3>
+        <p class="picker-sub">Los huéspedes podrán hablar contigo únicamente por el chat interno de TropicStay una vez aceptes su cita.</p>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label>Nombre del Anfitrión *</label>
+            <input type="text" [(ngModel)]="hostName" name="hostName" placeholder="Tu nombre completo" required />
+          </div>
+          <div class="form-group">
+            <label>Teléfono de contacto para Reservas *</label>
+            <input type="tel" [(ngModel)]="hostPhone" name="hostPhone" placeholder="+502 5555-1234" required />
+          </div>
+          <div class="form-group full-width">
+            <label>Presentación del Anfitrión</label>
+            <textarea [(ngModel)]="hostBio" name="hostBio" rows="2" placeholder="Cuéntales a tus huéspedes sobre tu hospitalidad y qué recomendaciones les darás..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Capacidad y Distribución -->
+      <div class="form-section">
+        <h3 class="section-heading"><i class="fa-solid fa-bed"></i> 4. Capacidad y Distribución</h3>
         <div class="form-grid-4">
           <div class="form-group">
             <label>Máx. Huéspedes</label>
@@ -96,9 +155,9 @@
         </div>
       </div>
 
-      <!-- 3. Precios y Tarifas -->
+      <!-- 5. Precios y Tarifas -->
       <div class="form-section">
-        <h3 class="section-heading"><i class="fa-solid fa-tags"></i> 3. Tarifas y Depósito</h3>
+        <h3 class="section-heading"><i class="fa-solid fa-tags"></i> 5. Tarifas y Depósito</h3>
         <div class="form-grid-3">
           <div class="form-group">
             <label>Precio por Noche (Quetzales Q) *</label>
@@ -116,9 +175,9 @@
         </div>
       </div>
 
-      <!-- 4. Fotos e Imágenes -->
+      <!-- 6. Fotos e Imágenes -->
       <div class="form-section">
-        <h3 class="section-heading"><i class="fa-solid fa-camera"></i> 4. Fotografías del Chalet</h3>
+        <h3 class="section-heading"><i class="fa-solid fa-camera"></i> 6. Fotografías del Chalet</h3>
         <div class="form-group">
           <label>URL de Foto Principal (Portada)</label>
           <input type="url" [(ngModel)]="mainImageUrl" name="mainImageUrl" placeholder="https://..." />
@@ -148,9 +207,9 @@
         </div>
       </div>
 
-      <!-- 5. Amenidades -->
+      <!-- 7. Amenidades -->
       <div class="form-section">
-        <h3 class="section-heading"><i class="fa-solid fa-sparkles"></i> 5. Amenidades Destacadas</h3>
+        <h3 class="section-heading"><i class="fa-solid fa-sparkles"></i> 7. Amenidades Destacadas</h3>
         <div class="amenities-selection-grid">
           @for (amenity of allAmenities; track amenity) {
             <button 
@@ -165,9 +224,9 @@
         </div>
       </div>
 
-      <!-- 6. Normas de la Casa -->
+      <!-- 8. Normas de la Casa -->
       <div class="form-section">
-        <h3 class="section-heading"><i class="fa-solid fa-clipboard-list"></i> 6. Normas y Reglas</h3>
+        <h3 class="section-heading"><i class="fa-solid fa-clipboard-list"></i> 8. Normas y Reglas</h3>
         <div class="rules-editor">
           <div class="add-rule-row">
             <input type="text" [(ngModel)]="newRule" name="newRule" placeholder="Ej: No encender fogatas fuera del área designada" (keyup.enter)="addRule()" />
@@ -191,7 +250,7 @@
         }
         <button type="submit" class="btn-primary btn-lg" [disabled]="isSubmitting">
           <i class="fa-solid fa-cloud-arrow-up"></i>
-          <span>{{ isSubmitting ? 'Guardando en MongoDB...' : 'Guardar y Publicar mi Chalet' }}</span>
+          <span>{{ isSubmitting ? 'Guardando en MongoDB...' : (isEditMode ? 'Guardar Cambios del Chalet' : 'Guardar y Publicar mi Chalet') }}</span>
         </button>
       </div>
     </form>

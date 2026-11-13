@@ -1,64 +1,254 @@
 <main class="messages-page container">
   <header class="messages-heading">
-    <span class="section-tag"><i class="fa-solid fa-comments"></i> Comunicación directa</span>
-    <h1>Mensajes</h1>
-    <p>Consulta y responde a huéspedes o anfitriones sin salir de TropicStay.</p>
+    <div>
+      <span class="section-tag">
+        <i class="fa-solid fa-comments"></i> Chat interno verificado de TropicStay
+        <span class="live-status-pill" [class.is-online]="realtime.isConnected()">
+          <span class="live-pulse"></span>
+          {{ realtime.isConnected() ? 'En vivo' : 'Conectando...' }}
+        </span>
+      </span>
+      <h1>Mensajes Directos</h1>
+      <p>Comunícate de forma segura únicamente dentro de la plataforma una vez aceptada la cita con el propietario.</p>
+    </div>
+    <div class="heading-actions">
+      <a routerLink="/bookings" class="btn-outline">
+        <i class="fa-solid fa-calendar-check"></i> Citas y Reservas
+      </a>
+      <a routerLink="/explore" class="btn-primary">
+        <i class="fa-solid fa-compass"></i> Explorar Chalets
+      </a>
+    </div>
   </header>
 
-  @if (error) {
-    <p class="messages-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</p>
+  @if (error()) {
+    <p class="messages-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error() }}</p>
   }
 
-  <section class="messages-shell glass-panel">
-    <aside class="conversation-list" aria-label="Conversaciones">
+  <section class="messages-shell glass-panel" [attr.data-mobile-view]="mobileView()">
+    <!-- Left Conversations Sidebar -->
+    <aside class="conversation-list" aria-label="Conversaciones habilitadas">
       <div class="conversation-list-header">
-        <h2>Conversaciones</h2>
-        <button type="button" (click)="loadConversations()" aria-label="Actualizar mensajes"><i class="fa-solid fa-rotate"></i></button>
+        <div>
+          <h2>Chats Activos</h2>
+          <small>Citas aceptadas ({{ conversations().length }})</small>
+        </div>
+        <button type="button" (click)="loadConversations()" aria-label="Actualizar mensajes" title="Actualizar conversaciones">
+          <i class="fa-solid fa-rotate" [class.fa-spin]="isLoading()"></i>
+        </button>
       </div>
 
-      @if (isLoading) {
-        <p class="messages-state">Cargando mensajes...</p>
-      } @else if (conversations.length === 0) {
-        <div class="messages-state empty-state"><i class="fa-regular fa-comment-dots"></i><p>Aún no tienes conversaciones.</p></div>
-      } @else {
-        @for (conversation of conversations; track conversation.partner._id) {
-          <button type="button" class="conversation-item" [class.is-active]="selectedConversation?.partner?._id === conversation.partner._id" (click)="selectConversation(conversation)">
-            <img [src]="conversation.partner.avatar" [alt]="conversation.partner.name">
-            <span class="conversation-info">
-              <strong>{{ conversation.partner.name }}</strong>
-              <small>{{ conversation.lastMessage.isMine ? 'Tú: ' : '' }}{{ conversation.lastMessage.content }}</small>
-            </span>
-            @if (conversation.unreadCount > 0) { <b class="unread-count">{{ conversation.unreadCount }}</b> }
-          </button>
+      <div class="conv-search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="search"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+          name="searchConversations"
+          placeholder="Buscar anfitrión, huésped o chalet..." />
+      </div>
+
+      <div class="conversation-items-scroll">
+        @if (isLoading()) {
+          <div class="messages-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>Cargando conversaciones...</p>
+          </div>
+        } @else if (filteredConversations().length === 0) {
+          <div class="messages-state empty-state">
+            <i class="fa-regular fa-calendar-check"></i>
+            <p>{{ conversations().length === 0 ? 'Aún no tienes chats habilitados.' : 'No hay coincidencias.' }}</p>
+            <small>
+              Cada cita aceptada entre huésped y propietario aparecerá automáticamente aquí y en tu chat rápido.
+            </small>
+          </div>
+        } @else {
+          @for (conversation of filteredConversations(); track conversation.partner._id) {
+            <button
+              type="button"
+              class="conversation-item"
+              [class.is-active]="selectedPartner()?._id === conversation.partner._id"
+              (click)="selectConversation(conversation)">
+              <div class="conv-avatar-wrap">
+                <img
+                  [src]="conversation.partner.avatar | safeAvatar:conversation.partner._id:conversation.partner.name"
+                  [alt]="conversation.partner.name"
+                  appAvatarFallback>
+                <span class="conv-verified-dot" title="Cita aceptada"></span>
+              </div>
+              <span class="conversation-info">
+                <span class="conv-top-line">
+                  <strong>{{ conversation.partner.name }}</strong>
+                  @if (conversation.lastMessage?.createdAt) {
+                    <time class="conv-time">{{ formatSidebarTime(conversation.lastMessage?.createdAt) }}</time>
+                  }
+                </span>
+                @if (conversation.chalet) {
+                  <span class="conv-chalet-tag"><i class="fa-solid fa-house"></i> {{ conversation.chalet.title }}</span>
+                }
+                <small>
+                  @if (conversation.lastMessage) {
+                    {{ conversation.lastMessage.isMine ? 'Tú: ' : '' }}{{ conversation.lastMessage.content }}
+                  } @else {
+                    Cita aceptada • Toca para chatear
+                  }
+                </small>
+              </span>
+              @if (conversation.unreadCount > 0) {
+                <b class="unread-count">{{ conversation.unreadCount }}</b>
+              }
+            </button>
+          }
         }
-      }
+      </div>
     </aside>
 
+    <!-- Right Full Conversation Workspace -->
     <div class="conversation-panel">
-      @if (!selectedConversation) {
-        <div class="messages-state panel-empty"><i class="fa-regular fa-paper-plane"></i><h2>Selecciona una conversación</h2><p>Los mensajes nuevos aparecerán aquí.</p></div>
-      } @else {
+      @if (!selectedPartner(); as noPartner) {
+        <div class="messages-state panel-empty">
+          <div class="panel-empty-badge"><i class="fa-regular fa-paper-plane"></i></div>
+          <h2>Tus Mensajes en TropicStay</h2>
+          <p>Selecciona un chat de la izquierda o pide una cita en cualquier chalet. Cuando el propietario acepte tu cita, podrás conversar aquí cómodamente en pantalla completa.</p>
+          <a routerLink="/explore" class="btn-primary btn-sm">Explorar Chalets</a>
+        </div>
+      } @else if (selectedPartner(); as partner) {
         <header class="conversation-header">
-          <img [src]="selectedConversation.partner.avatar" [alt]="selectedConversation.partner.name">
-          <div><h2>{{ selectedConversation.partner.name }}</h2><span><i class="fa-solid fa-shield-check"></i> Perfil verificado</span></div>
+          <div class="conv-partner-left">
+            <button
+              type="button"
+              class="mobile-back-btn"
+              (click)="backToConversationsList()"
+              aria-label="Volver a la lista de chats">
+              <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <img
+              [src]="partner.avatar | safeAvatar:partner._id:partner.name"
+              [alt]="partner.name"
+              appAvatarFallback>
+            <div>
+              <h2>{{ partner.name }}</h2>
+              <span>
+                <i class="fa-solid fa-circle-check"></i> Chat oficial TropicStay
+                @if (partner.responseTime) {
+                  • Responde en {{ partner.responseTime }}
+                }
+              </span>
+            </div>
+          </div>
+
+          <div class="conv-header-actions">
+            <button
+              type="button"
+              class="btn-outline btn-xs"
+              (click)="minimizeToFloatingDock()"
+              title="Cambiar a ventana pequeña flotante">
+              <i class="fa-solid fa-down-left-and-up-right-to-center"></i> Modo mini
+            </button>
+            <a [routerLink]="['/host', partner._id]" class="btn-outline btn-xs">
+              <i class="fa-regular fa-user"></i> Ver Perfil
+            </a>
+          </div>
         </header>
 
-        <div class="messages-thread">
-          @if (isConversationLoading) {
-            <p class="messages-state">Cargando conversación...</p>
+        <!-- Chalet Context Banner -->
+        @if (selectedChalet(); as chalet) {
+          <div class="conv-chalet-banner">
+            <img [src]="chalet.thumbnail" [alt]="chalet.title" />
+            <div class="conv-chalet-info">
+              <div class="conv-chalet-badges">
+                <span class="conv-chalet-eyebrow">Chalet de la cita</span>
+                @if (chatEnabled()) {
+                  <span class="conv-appointment-pill"><i class="fa-solid fa-check"></i> Cita aceptada</span>
+                } @else {
+                  <span class="conv-appointment-pill is-locked"><i class="fa-solid fa-lock"></i> Cita pendiente</span>
+                }
+              </div>
+              <strong>{{ chalet.title }}</strong>
+              <small>
+                <i class="fa-solid fa-location-dot"></i> {{ chalet.municipality }}, {{ chalet.department }}
+                • <b>{{ chaletService.formatPrice(chalet.pricePerNight, chalet.priceUSD) }}</b> / noche
+              </small>
+            </div>
+            <a [routerLink]="['/chalet', chalet._id]" class="btn-primary btn-xs">
+              <i class="fa-solid fa-calendar-check"></i> Ver Chalet y Reservar
+            </a>
+          </div>
+        }
+
+        <div #threadContainer class="messages-thread" aria-live="polite">
+          @if (isConversationLoading()) {
+            <div class="messages-state">
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <p>Cargando conversación...</p>
+            </div>
+          } @else if (!chatEnabled()) {
+            <div class="messages-locked-box">
+              <i class="fa-solid fa-lock"></i>
+              <h3>Chat pendiente de habilitación</h3>
+              @if (appointmentStatus() === 'pendiente') {
+                <p>Ya solicitaste una cita con <strong>{{ partner.name }}</strong>. En cuanto el propietario acepte tu cita, este chat se habilitará automáticamente.</p>
+              } @else {
+                <p>Para proteger a huéspedes y propietarios, el chat dentro de la página web solo se habilita cuando solicitas una cita en el chalet y el propietario la acepta.</p>
+              }
+              <div class="locked-actions">
+                @if (selectedChalet(); as chalet) {
+                  <a [routerLink]="['/chalet', chalet._id]" class="btn-primary btn-sm">Ir al Chalet a Pedir Cita</a>
+                }
+                <a routerLink="/bookings" class="btn-outline btn-sm">Ver Mis Citas</a>
+              </div>
+            </div>
+          } @else if (messages().length === 0) {
+            <div class="messages-state empty-thread-state">
+              <i class="fa-regular fa-paper-plane"></i>
+              <p>¡Cita aceptada! Escribe tu primer mensaje a <strong>{{ partner.name }}</strong> para coordinar detalles directamente aquí.</p>
+            </div>
           } @else {
-            @for (message of messages; track message._id) {
+            @for (message of messages(); track message._id) {
               <article class="message-bubble" [class.is-mine]="message.isMine">
-                <p>{{ message.content }}</p><time>{{ formatTime(message.createdAt) }}</time>
+                @if (message.chalet && message.chalet._id !== selectedChalet()?._id) {
+                  <a [routerLink]="['/chalet', message.chalet._id]" class="bubble-chalet-ref">
+                    <i class="fa-solid fa-house"></i> {{ message.chalet.title }}
+                  </a>
+                }
+                <p>{{ message.content }}</p>
+                <div class="bubble-meta">
+                  <time>{{ formatTime(message.createdAt) }}</time>
+                  @if (message.isMine) {
+                    <span class="read-status" [class.is-read]="!!message.readAt" [title]="message.readAt ? 'Leído' : 'Enviado'">
+                      {{ message.readAt ? '✓✓' : '✓' }}
+                    </span>
+                  }
+                </div>
               </article>
             }
           }
         </div>
 
-        <form class="message-composer" (ngSubmit)="send()">
-          <textarea [(ngModel)]="draft" name="draft" rows="3" maxlength="2000" placeholder="Escribe un mensaje..." [disabled]="isSending" required></textarea>
-          <button type="submit" class="btn-primary" [disabled]="isSending || !draft.trim()"><i class="fa-solid fa-paper-plane"></i> {{ isSending ? 'Enviando...' : 'Enviar' }}</button>
-        </form>
+        @if (chatEnabled()) {
+          <div class="quick-replies-strip">
+            <button type="button" (click)="useQuickMessage('visit')">Confirmar visita</button>
+            <button type="button" (click)="useQuickMessage('payment')">Consultar reserva y pago</button>
+            <button type="button" (click)="useQuickMessage('arrival')">Horarios de llegada</button>
+          </div>
+
+          <form class="message-composer" (ngSubmit)="send()">
+            <textarea
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
+              name="draft"
+              rows="2"
+              maxlength="2000"
+              placeholder="Escribe un mensaje... (Enter para enviar)"
+              (keydown)="onComposerKeydown($event)"
+              [disabled]="isSending()"
+              required>
+            </textarea>
+            <button type="submit" class="btn-primary composer-send-btn" [disabled]="isSending() || !draft().trim()">
+              <i class="fa-solid fa-paper-plane"></i> {{ isSending() ? 'Enviando...' : 'Enviar' }}
+            </button>
+          </form>
+        }
       }
     </div>
   </section>

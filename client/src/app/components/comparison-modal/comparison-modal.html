@@ -140,7 +140,7 @@
               @for (c of comparisonService.comparedChalets(); track c._id) {
                 <td class="feature-val">
                   <div class="host-mini-info">
-                    <img [src]="c.host.avatar" [alt]="c.host.name" class="host-avatar-xs" />
+                    <img [src]="c.host.avatar | safeAvatar:c.host._id:c.host.name" [alt]="c.host.name" class="host-avatar-xs" appAvatarFallback />
                     <div>
                       <strong>{{ c.host.name }}</strong>
                       @if (c.host.superhost) {

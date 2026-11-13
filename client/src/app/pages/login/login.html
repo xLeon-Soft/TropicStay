@@ -3,17 +3,109 @@
     <img src="logo.png" alt="TropicStay" class="login-logo">
     <span class="eyebrow">BIENVENIDO A TROPICSTAY</span>
     <h1>Tu próxima escapada empieza aquí</h1>
-    <p>Inicia sesión para descubrir chalets únicos en Guatemala, guardar tus favoritos y hacer tus reservaciones.</p>
+    <p>Inicia sesión para reservar o pedir cita en chalets de Guatemala, chatear en tiempo real con propietarios o publicar tu propiedad.</p>
 
     <div #googleButton class="google-button" aria-label="Iniciar sesión con Google"></div>
     @if (loading()) {
-      <span class="loading-text"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando acceso seguro…</span>
+      <span class="loading-text"><i class="fa-solid fa-circle-notch fa-spin"></i> Cargando acceso con Google…</span>
     }
-    @if (signingIn()) {
-      <span class="loading-text"><i class="fa-solid fa-circle-notch fa-spin"></i> Validando tu cuenta…</span>
-    }
+
+    <div class="auth-divider"><span>o continúa con tu correo</span></div>
+
+    <div class="auth-tabs">
+      <button type="button" [class.active]="authTab() === 'login'" (click)="authTab.set('login'); error.set('')">
+        Iniciar Sesión
+      </button>
+      <button type="button" [class.active]="authTab() === 'register'" (click)="authTab.set('register'); error.set('')">
+        Crear Cuenta
+      </button>
+    </div>
+
+    <form (ngSubmit)="onEmailSubmit()" class="email-auth-form">
+      @if (authTab() === 'register') {
+        <div class="auth-field">
+          <label for="authName">Nombre Completo</label>
+          <input id="authName" type="text" [(ngModel)]="name" name="name" placeholder="Ej: Sofía Méndez" required />
+        </div>
+      }
+
+      <div class="auth-field">
+        <label for="authEmail">Correo Electrónico</label>
+        <input id="authEmail" type="email" [(ngModel)]="email" name="email" placeholder="tu@correo.com" required />
+      </div>
+
+      <div class="auth-field">
+        <label for="authPassword">Contraseña</label>
+        <div class="password-input-wrap">
+          <input
+            id="authPassword"
+            [type]="showPassword() ? 'text' : 'password'"
+            [ngModel]="password"
+            (ngModelChange)="onPasswordInput($event)"
+            name="password"
+            placeholder="Mínimo 6 caracteres"
+            required />
+          <button
+            type="button"
+            class="btn-toggle-password"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+            [title]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+            <i class="fa-solid" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
+          </button>
+        </div>
+
+        @if (authTab() === 'register') {
+          <div class="password-strength-box" [attr.data-tone]="passwordStrength().tone">
+            <div class="strength-header">
+              <span class="strength-caption">Seguridad de contraseña:</span>
+              <strong class="strength-label">{{ passwordStrength().label }}</strong>
+            </div>
+            <div class="strength-track" aria-hidden="true">
+              <div class="strength-fill" [style.width.%]="passwordStrength().percent"></div>
+            </div>
+            <div class="strength-criteria">
+              <span [class.met]="passwordChecks().goodLength">
+                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().goodLength" [class.fa-circle]="!passwordChecks().goodLength"></i>
+                8+ caracteres
+              </span>
+              <span [class.met]="passwordChecks().uppercase">
+                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().uppercase" [class.fa-circle]="!passwordChecks().uppercase"></i>
+                Mayúscula
+              </span>
+              <span [class.met]="passwordChecks().number">
+                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().number" [class.fa-circle]="!passwordChecks().number"></i>
+                Número
+              </span>
+              <span [class.met]="passwordChecks().special">
+                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().special" [class.fa-circle]="!passwordChecks().special"></i>
+                Símbolo
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (authTab() === 'register') {
+        <div class="auth-field">
+          <label for="authPhone">Teléfono de contacto</label>
+          <input id="authPhone" type="tel" [(ngModel)]="phone" name="phone" placeholder="+502 5555-1234" />
+        </div>
+      }
+
+      <button type="submit" class="btn-auth-submit" [disabled]="signingIn()">
+        @if (signingIn()) {
+          <i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...
+        } @else if (authTab() === 'login') {
+          <i class="fa-solid fa-right-to-bracket"></i> Ingresar a TropicStay
+        } @else {
+          <i class="fa-solid fa-user-plus"></i> Registrarme y Entrar
+        }
+      </button>
+    </form>
+
     @if (error()) {
-      <p class="login-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error() }}</p>
+      <p class="login-error" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ error() }}</p>
     }
 
     <small>Al continuar, aceptas nuestros términos de uso y política de privacidad.</small>

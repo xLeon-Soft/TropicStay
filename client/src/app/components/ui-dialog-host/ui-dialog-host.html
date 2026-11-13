@@ -1,0 +1,82 @@
+@if (uiDialog.activeConfirm(); as dialog) {
+  <div
+    class="ts-dialog-backdrop animate-fade"
+    role="presentation"
+    (click)="uiDialog.resolveConfirm(false)">
+    <section
+      class="ts-dialog-card glass-panel animate-scale-in"
+      [attr.data-tone]="dialog.tone"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ts-dialog-title"
+      (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="ts-dialog-close"
+        (click)="uiDialog.resolveConfirm(false)"
+        aria-label="Cerrar ventana">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="ts-dialog-head">
+        <div class="ts-dialog-icon-wrap" [attr.data-tone]="dialog.tone">
+          <i [class]="dialog.icon"></i>
+        </div>
+        <div class="ts-dialog-heading">
+          <span class="ts-dialog-badge">{{ dialog.badge }}</span>
+          <h2 id="ts-dialog-title" class="ts-dialog-title">{{ dialog.title }}</h2>
+        </div>
+      </div>
+
+      <p class="ts-dialog-message">{{ dialog.message }}</p>
+
+      @if (dialog.subtitle) {
+        <p class="ts-dialog-subtitle">
+          <i class="fa-solid fa-bolt"></i>
+          <span>{{ dialog.subtitle }}</span>
+        </p>
+      }
+
+      <div class="ts-dialog-actions">
+        <button
+          type="button"
+          class="ts-btn-cancel"
+          (click)="uiDialog.resolveConfirm(false)">
+          {{ dialog.cancelText }}
+        </button>
+        <button
+          type="button"
+          class="ts-btn-confirm"
+          [attr.data-tone]="dialog.tone"
+          (click)="uiDialog.resolveConfirm(true)">
+          <i class="fa-solid" [class.fa-check]="dialog.tone === 'primary'" [class.fa-xmark]="dialog.tone === 'danger'" [class.fa-exclamation]="dialog.tone === 'warning'"></i>
+          {{ dialog.confirmText }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (uiDialog.toasts().length > 0) {
+  <aside class="ts-toast-stack" aria-live="polite" aria-label="Avisos del sistema">
+    @for (toast of uiDialog.toasts(); track toast.id) {
+      <div class="ts-toast glass-panel animate-fade" [attr.data-tone]="toast.tone">
+        <span class="ts-toast-icon" [attr.data-tone]="toast.tone">
+          <i [class]="toast.icon"></i>
+        </span>
+        <div class="ts-toast-copy">
+          <strong>{{ toast.title }}</strong>
+          <p>{{ toast.message }}</p>
+        </div>
+        <button
+          type="button"
+          class="ts-toast-close"
+          (click)="uiDialog.dismissToast(toast.id)"
+          aria-label="Cerrar aviso">
+          &times;
+        </button>
+      </div>
+    }
+  </aside>
+}
+

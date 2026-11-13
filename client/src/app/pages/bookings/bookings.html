@@ -1,0 +1,290 @@
+<main class="bookings-page container">
+  <header class="bookings-header">
+    <div>
+      <span class="badge badge-verified">
+        <i class="fa-solid fa-calendar-check"></i> Gestión en Tiempo Real de Estadías y Citas
+        <span class="live-status-pill" [class.is-online]="realtime.isConnected()">
+          <span class="live-pulse"></span>
+          {{ realtime.isConnected() ? 'En vivo' : 'Conectando...' }}
+        </span>
+      </span>
+      <h1>Mis Reservas y Citas en TropicStay</h1>
+      <p>Consulta tus solicitudes de alquiler o visitas guiadas, habla directo con el propietario o aprueba en tiempo real las solicitudes de tus chalets.</p>
+    </div>
+
+    <div class="bookings-header-actions">
+      <a routerLink="/messages" class="btn-outline">
+        <i class="fa-solid fa-comments"></i> Ir a mis Mensajes
+      </a>
+      <a routerLink="/explore" class="btn-primary">
+        <i class="fa-solid fa-compass"></i> Explorar Chalets
+      </a>
+    </div>
+  </header>
+
+  <!-- Tabs: Guest vs Host + Status Filters -->
+  <div class="bookings-toolbar glass-panel">
+    <div class="role-tabs">
+      <button
+        type="button"
+        class="role-tab"
+        [class.active]="activeTab === 'guest'"
+        (click)="setTab('guest')">
+        <i class="fa-solid fa-suitcase-rolling"></i>
+        <span>Mis Solicitudes y Viajes ({{ guestBookings.length }})</span>
+      </button>
+
+      <button
+        type="button"
+        class="role-tab"
+        [class.active]="activeTab === 'host'"
+        (click)="setTab('host')">
+        <i class="fa-solid fa-house-chimney-user"></i>
+        <span>Solicitudes en mis Chalets ({{ hostBookings.length }})</span>
+        @if (pendingHostCount > 0) {
+          <span class="tab-pending-pill">{{ pendingHostCount }} nuevas</span>
+        }
+      </button>
+    </div>
+
+    <div class="status-filter-pills">
+      <button type="button" class="status-pill" [class.active]="statusFilter === 'all'" (click)="statusFilter = 'all'">
+        Todas
+      </button>
+      <button type="button" class="status-pill" [class.active]="statusFilter === 'pendiente'" (click)="statusFilter = 'pendiente'">
+        🟡 Pendientes
+      </button>
+      <button type="button" class="status-pill" [class.active]="statusFilter === 'confirmada'" (click)="statusFilter = 'confirmada'">
+        🟢 Confirmadas
+      </button>
+      <button type="button" class="status-pill" [class.active]="statusFilter === 'cancelada'" (click)="statusFilter = 'cancelada'">
+        🔴 Canceladas
+      </button>
+    </div>
+  </div>
+
+  @if (error) {
+    <div class="bookings-error" role="alert">
+      <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando tus reservaciones y citas...</p>
+    </div>
+  } @else if (filteredBookings.length === 0) {
+    <div class="empty-bookings glass-panel">
+      <i class="fa-regular fa-calendar-xmark empty-bookings-icon"></i>
+      @if (activeTab === 'guest') {
+        <h3>No tienes solicitudes en esta categoría</h3>
+        <p>Explora los chalets frente al lago, playa o montaña en Guatemala y pide una cita o solicita tu alquiler hablando directo con el anfitrión.</p>
+        <a routerLink="/explore" class="btn-primary">Buscar un Chalet</a>
+      } @else {
+        <h3>Aún no has recibido solicitudes en tus chalets</h3>
+        <p>Cuando un huésped solicite alquilar o pedir una cita en tu chalet, aparecerá aquí en tiempo real.</p>
+        <a routerLink="/publish" class="btn-accent"><i class="fa-solid fa-plus-circle"></i> Publicar un Chalet</a>
+      }
+    </div>
+  } @else {
+    <div class="bookings-list">
+      @for (booking of filteredBookings; track booking._id) {
+        <article class="booking-card glass-panel" [class.is-live-highlight]="highlightedBookingId === booking._id">
+          <!-- Chalet Thumbnail -->
+          <div class="booking-media">
+            @if (booking.chalet) {
+              <img [src]="booking.chalet.thumbnail || booking.chalet.images?.[0]" [alt]="booking.chalet.title" />
+            }
+            <span class="booking-status-badge" [attr.data-status]="booking.status">
+              @if (booking.status === 'confirmada') {
+                <i class="fa-solid fa-circle-check"></i> Confirmada
+              } @else if (booking.status === 'pendiente') {
+                <i class="fa-solid fa-clock"></i> Pendiente
+              } @else {
+                <i class="fa-solid fa-ban"></i> Cancelada
+              }
+            </span>
+          </div>
+
+          <!-- Booking Main Info -->
+          <div class="booking-content">
+            <div class="booking-top-row">
+              <div>
+                <div class="booking-kind-row">
+                  <span class="booking-kind-badge" [class.is-visit]="booking.bookingType === 'cita'">
+                    @if (booking.bookingType === 'cita') {
+                      <i class="fa-solid fa-handshake"></i> Cita / Visita al Chalet
+                    } @else {
+                      <i class="fa-solid fa-key"></i> Solicitud de Alquiler
+                    }
+                  </span>
+                  @if (booking.chalet) {
+                    <span class="booking-location">
+                      <i class="fa-solid fa-location-dot"></i> {{ booking.chalet.municipality }}, {{ booking.chalet.department }}
+                    </span>
+                  }
+                </div>
+                @if (booking.chalet) {
+                  <h2 class="booking-chalet-title">
+                    <a [routerLink]="['/chalet', booking.chalet._id]">{{ booking.chalet.title }}</a>
+                  </h2>
+                } @else {
+                  <h2 class="booking-chalet-title">Chalet no disponible</h2>
+                }
+              </div>
+
+              <div class="booking-total-box">
+                @if (booking.bookingType === 'cita') {
+                  <span class="total-label">Visita guiada</span>
+                  <strong class="total-price">Sin costo</strong>
+                } @else {
+                  <span class="total-label">Total ({{ booking.nights }} {{ booking.nights === 1 ? 'noche' : 'noches' }})</span>
+                  <strong class="total-price">{{ chaletService.formatPrice(booking.totalPriceGTQ) }}</strong>
+                }
+              </div>
+            </div>
+
+            <!-- Dates & Guests Specs -->
+            <div class="booking-dates-bar">
+              @if (booking.bookingType === 'cita') {
+                <div class="date-chip">
+                  <i class="fa-regular fa-calendar"></i>
+                  <div>
+                    <small>Fecha de Cita</small>
+                    <strong>{{ formatDate(booking.checkIn) }}</strong>
+                  </div>
+                </div>
+                <div class="date-chip">
+                  <i class="fa-regular fa-clock"></i>
+                  <div>
+                    <small>Hora solicitada</small>
+                    <strong>{{ booking.visitTime || '10:00 AM' }}</strong>
+                  </div>
+                </div>
+              } @else {
+                <div class="date-chip">
+                  <i class="fa-solid fa-plane-arrival"></i>
+                  <div>
+                    <small>Llegada (Check-In)</small>
+                    <strong>{{ formatDate(booking.checkIn) }}</strong>
+                  </div>
+                </div>
+                <div class="date-chip">
+                  <i class="fa-solid fa-plane-departure"></i>
+                  <div>
+                    <small>Salida (Check-Out)</small>
+                    <strong>{{ formatDate(booking.checkOut) }}</strong>
+                  </div>
+                </div>
+              }
+              <div class="date-chip">
+                <i class="fa-solid fa-user-group"></i>
+                <div>
+                  <small>{{ booking.bookingType === 'cita' ? 'Asistentes' : 'Huéspedes' }}</small>
+                  <strong>{{ booking.guestsCount }} {{ booking.guestsCount === 1 ? 'persona' : 'personas' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            @if (booking.notes) {
+              <p class="booking-notes">
+                <i class="fa-regular fa-comment-dots"></i>
+                <span><strong>Nota de la solicitud:</strong> "{{ booking.notes }}"</span>
+              </p>
+            }
+
+            <!-- Counterpart Person Info & Direct Communication Actions -->
+            <div class="booking-footer-row">
+              @if (activeTab === 'guest') {
+                @if (booking.chalet?.host; as host) {
+                  <div class="counterpart-box">
+                    <img [src]="host.avatar | safeAvatar:host._id:host.name" [alt]="host.name" class="counterpart-avatar" appAvatarFallback />
+                    <div>
+                      <small>Persona que alquila el chalet (Anfitrión)</small>
+                      <strong>{{ host.name }}</strong>
+                      <span><i class="fa-solid fa-phone"></i> {{ host.phone || '+502 5555-0000' }}</span>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="counterpart-box">
+                    <div>
+                      <small>Anfitrión</small>
+                      <strong>Información de anfitrión no disponible</strong>
+                    </div>
+                  </div>
+                }
+
+                <div class="booking-actions">
+                  @if (booking.chalet?.host?._id && canChatForBooking(booking)) {
+                    <button
+                      type="button"
+                      class="btn-primary btn-sm"
+                      (click)="openInternalChat(booking.chalet!.host!._id, booking.chalet?._id)">
+                      <i class="fa-solid fa-comments"></i> Chat con {{ booking.chalet!.host!.name }}
+                    </button>
+                  } @else if (booking.status !== 'cancelada') {
+                    <span class="chat-pending-badge">
+                      <i class="fa-solid fa-lock"></i> Chat habilitado al aceptar cita
+                    </span>
+                  }
+
+                  @if (booking.status !== 'cancelada') {
+                    <button
+                      type="button"
+                      class="btn-cancel-booking"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="changeStatus(booking, 'cancelada')">
+                      <i class="fa-solid fa-xmark"></i> Cancelar
+                    </button>
+                  }
+                </div>
+              } @else {
+                <!-- Host View: Guest Details & Status Controls -->
+                <div class="counterpart-box">
+                  <img [src]="booking.guest?.avatar | safeAvatar:booking.guest?._id:booking.guestName" [alt]="booking.guestName" class="counterpart-avatar" appAvatarFallback />
+                  <div>
+                    <small>Persona que solicita / reserva</small>
+                    <strong>{{ booking.guestName }}</strong>
+                    <span><i class="fa-solid fa-envelope"></i> {{ booking.guestEmail }} • <i class="fa-solid fa-phone"></i> {{ booking.guestPhone }}</span>
+                  </div>
+                </div>
+
+                <div class="booking-actions">
+                  @if (booking.guest?._id && canChatForBooking(booking)) {
+                    <button
+                      type="button"
+                      class="btn-primary btn-sm"
+                      (click)="openInternalChat(booking.guest._id, booking.chalet?._id)">
+                      <i class="fa-solid fa-comments"></i> Chatear con {{ booking.guestName }}
+                    </button>
+                  }
+
+                  @if (booking.status !== 'confirmada') {
+                    <button
+                      type="button"
+                      class="btn-confirm-booking"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="changeStatus(booking, 'confirmada')">
+                      <i class="fa-solid fa-check"></i> {{ booking.bookingType === 'cita' ? 'Aceptar Cita y Habilitar Chat' : 'Confirmar' }}
+                    </button>
+                  }
+
+                  @if (booking.status !== 'cancelada') {
+                    <button
+                      type="button"
+                      class="btn-cancel-booking"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="changeStatus(booking, 'cancelada')">
+                      <i class="fa-solid fa-xmark"></i> Rechazar / Cancelar
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</main>

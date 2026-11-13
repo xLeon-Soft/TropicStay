@@ -1,80 +1,848 @@
 {
   "info": {
     "_postman_id": "b19b3be3-63b0-4fcf-a6c3-0bfe075eadc9",
-    "name": "TropicStay API - pruebas locales",
-    "description": "Configura baseUrl y token. Obtén token iniciando sesión desde la aplicación Angular; consulta docs/API_POSTMAN.md.",
+    "name": "TropicStay API - Colección General",
+    "description": "Colección general unificada y ordenada de TropicStay.\n\nLas carpetas 1 a 7 están diseñadas para ejecutarse en orden (individualmente o con Postman Collection Runner) probando toda la API contra MongoDB con tokens automáticos de Anfitrión y Huésped.\nLa carpeta 8 reúne endpoints interactivos o manuales (Google OAuth, subida de archivos y streams SSE).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:5000/api" },
     { "key": "token", "value": "" },
-    { "key": "chaletId", "value": "" },
+    { "key": "hostToken", "value": "" },
+    { "key": "guestToken", "value": "" },
+    { "key": "ownerId", "value": "" },
+    { "key": "guestId", "value": "" },
+    { "key": "hostId", "value": "6aad52b6a1c64f1253434d57" },
+    { "key": "chaletId", "value": "6aad52b6a1c64f1253434d5f" },
+    { "key": "appointmentId", "value": "" },
     { "key": "bookingId", "value": "" },
-    { "key": "hostId", "value": "" }
+    { "key": "hostEmail", "value": "postman.host@tropicstay.test" },
+    { "key": "guestEmail", "value": "postman.guest@tropicstay.test" },
+    { "key": "password", "value": "TropicStay2026!" },
+    { "key": "futureVisitDate", "value": "2027-06-12" },
+    { "key": "futureCheckIn", "value": "2027-06-15" },
+    { "key": "futureCheckOut", "value": "2027-06-18" }
   ],
   "item": [
     {
-      "name": "Público",
+      "name": "1. Sistema y Moneda",
       "item": [
-        { "name": "Health", "request": { "method": "GET", "url": "{{baseUrl}}/health" } },
-        { "name": "Listar chalets", "request": { "method": "GET", "url": "{{baseUrl}}/chalets" } },
-        { "name": "Filtrar chalets", "request": { "method": "GET", "url": "{{baseUrl}}/chalets?department=Solol%C3%A1&guests=4&minRating=4.5&sort=price-asc" } },
-        { "name": "Departamentos", "request": { "method": "GET", "url": "{{baseUrl}}/chalets/meta/departments" } },
-        { "name": "Ver chalet por ID", "request": { "method": "GET", "url": "{{baseUrl}}/chalets/{{chaletId}}" } },
-        { "name": "Reseñas del chalet", "request": { "method": "GET", "url": "{{baseUrl}}/chalets/{{chaletId}}/reviews" } },
-        { "name": "Listar anfitriones", "request": { "method": "GET", "url": "{{baseUrl}}/hosts" } },
-        { "name": "Anfitrión por ID", "request": { "method": "GET", "url": "{{baseUrl}}/hosts/{{hostId}}" } }
+        {
+          "name": "01 - Health Check API y MongoDB",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('API saludable y MongoDB conectado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.status).to.eql('ok');",
+                  "  pm.expect(body.database).to.eql('connected');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        },
+        {
+          "name": "02 - Convertir GTQ a USD",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Conversión GTQ -> USD exitosa', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.eql(true);",
+                  "  pm.expect(body.data.amountUSD).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/currency/usd?gtq=2800"
+          }
+        }
       ]
     },
     {
-      "name": "Autenticado",
+      "name": "2. Autenticación y Perfil",
       "item": [
         {
-          "name": "Crear chalet",
-          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "if (body.data?._id) pm.collectionVariables.set('chaletId', body.data._id);"] } }],
+          "name": "03 - Registrar Anfitrión (Host)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('hostEmail', `postman.host.${Date.now()}@tropicstay.test`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) {",
+                  "  pm.collectionVariables.set('hostToken', body.token);",
+                  "  pm.collectionVariables.set('token', body.token);",
+                  "}",
+                  "if (body.user?._id) {",
+                  "  pm.collectionVariables.set('ownerId', body.user._id);",
+                  "  pm.collectionVariables.set('hostId', body.user._id);",
+                  "}",
+                  "pm.test('Anfitrión registrado en MongoDB', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(body.token).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
             "method": "POST",
             "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Chalet de prueba Postman\",\n  \"category\": \"Lago\",\n  \"department\": \"Sololá\",\n  \"municipality\": \"Panajachel\",\n  \"locationName\": \"Panajachel, Sololá\",\n  \"description\": \"Propiedad usada para pruebas manuales.\",\n  \"pricePerNight\": 1500,\n  \"guestsMax\": 4,\n  \"bedrooms\": 2,\n  \"beds\": 3,\n  \"bathrooms\": 2,\n  \"images\": [\"https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200\"],\n  \"thumbnail\": \"https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200\",\n  \"amenities\": [\"Wifi de alta velocidad\"],\n  \"rules\": [\"No fumar\"]\n}" },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Anfitrión Postman\",\n  \"email\": \"{{hostEmail}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"+502 5511-1001\",\n  \"role\": \"host\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "04 - Iniciar Sesión Anfitrión (Host)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) {",
+                  "  pm.collectionVariables.set('hostToken', body.token);",
+                  "  pm.collectionVariables.set('token', body.token);",
+                  "}",
+                  "if (body.user?._id) {",
+                  "  pm.collectionVariables.set('ownerId', body.user._id);",
+                  "  pm.collectionVariables.set('hostId', body.user._id);",
+                  "}",
+                  "pm.test('Login anfitrión exitoso', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.token).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{hostEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "05 - Registrar Huésped (Guest)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('guestEmail', `postman.guest.${Date.now()}@tropicstay.test`);"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) pm.collectionVariables.set('guestToken', body.token);",
+                  "if (body.user?._id) pm.collectionVariables.set('guestId', body.user._id);",
+                  "pm.test('Huésped registrado en MongoDB', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(body.token).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Huésped Postman\",\n  \"email\": \"{{guestEmail}}\",\n  \"password\": \"{{password}}\",\n  \"phone\": \"+502 5522-2002\",\n  \"role\": \"guest\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register"
+          }
+        },
+        {
+          "name": "06 - Iniciar Sesión Huésped (Guest)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.token) pm.collectionVariables.set('guestToken', body.token);",
+                  "if (body.user?._id) pm.collectionVariables.set('guestId', body.user._id);",
+                  "pm.test('Login huésped exitoso', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.token).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{guestEmail}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "07 - Ver Mi Perfil (/auth/me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Perfil cargado correctamente', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me"
+          }
+        },
+        {
+          "name": "08 - Actualizar Mi Perfil",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Perfil actualizado en MongoDB', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+502 5511-1099\",\n  \"bio\": \"Anfitrión verificado de chalets en Guatemala desde Postman.\",\n  \"responseTime\": \"menos de 15 min\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/profile"
+          }
+        },
+        {
+          "name": "09 - Obtener Avatar Proxy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Avatar entregado correctamente', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/avatar/{{ownerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Catálogo Público y Anfitriones",
+      "item": [
+        {
+          "name": "10 - Listar Chalets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de chalets devuelta', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
             "url": "{{baseUrl}}/chalets"
           }
         },
         {
-          "name": "Actualizar chalet",
+          "name": "11 - Filtrar Chalets (Sololá, Huéspedes y Precio)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Filtro aplicado correctamente', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
-            "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"pricePerNight\": 1650,\n  \"status\": \"disponible\"\n}" }, "url": "{{baseUrl}}/chalets/{{chaletId}}"
+            "method": "GET",
+            "url": "{{baseUrl}}/chalets?department=Solol%C3%A1&guests=4&minRating=4.5&sort=price-asc"
           }
         },
         {
-          "name": "Agregar reseña",
+          "name": "12 - Departamentos con Chalets",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
-            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Reseña creada desde Postman.\",\n  \"cleanliness\": 5,\n  \"location\": 5,\n  \"communication\": 5,\n  \"value\": 5\n}" }, "url": "{{baseUrl}}/chalets/{{chaletId}}/reviews"
+            "method": "GET",
+            "url": "{{baseUrl}}/chalets/meta/departments"
           }
         },
         {
-          "name": "Subir imágenes", "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
-            "method": "POST", "body": { "mode": "formdata", "formdata": [{ "key": "images", "type": "file", "src": "" }] }, "url": "{{baseUrl}}/uploads/images"
+          "name": "13 - Destinos (Municipios) con Chalets",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chalets/meta/destinations"
           }
         },
         {
-          "name": "Crear reserva",
-          "event": [{ "listen": "test", "script": { "exec": ["const body = pm.response.json();", "if (body.data?._id) pm.collectionVariables.set('bookingId', body.data._id);"] } }],
+          "name": "14 - Ver Chalet por ID",
           "request": {
-            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
-            "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "body": { "mode": "raw", "raw": "{\n  \"chaletId\": \"{{chaletId}}\",\n  \"guestName\": \"Usuario de Prueba\",\n  \"guestEmail\": \"usuario@ejemplo.com\",\n  \"guestPhone\": \"+50255555555\",\n  \"checkIn\": \"2026-11-20\",\n  \"checkOut\": \"2026-11-23\",\n  \"guestsCount\": 2,\n  \"notes\": \"Prueba manual Postman\"\n}" }, "url": "{{baseUrl}}/bookings"
+            "method": "GET",
+            "url": "{{baseUrl}}/chalets/{{chaletId}}"
           }
         },
-        { "name": "Mis reservas / mis chalets", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/bookings?status=confirmada" } },
-        { "name": "Reserva por ID", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "GET", "url": "{{baseUrl}}/bookings/{{bookingId}}" } },
-        { "name": "Cancelar reserva", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{ \"status\": \"cancelada\" }" }, "url": "{{baseUrl}}/bookings/{{bookingId}}/status" } },
-        { "name": "Eliminar chalet de prueba", "request": { "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] }, "method": "DELETE", "url": "{{baseUrl}}/chalets/{{chaletId}}" } }
+        {
+          "name": "15 - Fechas Ocupadas del Chalet",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chalets/{{chaletId}}/booked-dates"
+          }
+        },
+        {
+          "name": "16 - Reseñas del Chalet",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chalets/{{chaletId}}/reviews"
+          }
+        },
+        {
+          "name": "17 - Listar Anfitriones",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/hosts"
+          }
+        },
+        {
+          "name": "18 - Ver Anfitrión por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/hosts/{{hostId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Gestión de Chalets y Estados (Anfitrión)",
+      "item": [
+        {
+          "name": "19 - Crear Chalet (Location[] + USD Automático)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data?._id) pm.collectionVariables.set('chaletId', body.data._id);",
+                  "if (body.data?.host?._id) pm.collectionVariables.set('hostId', body.data.host._id);",
+                  "pm.test('Chalet creado en MongoDB', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(body.data.location).to.be.an('array');",
+                  "  pm.expect(body.data.priceUSD).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Chalet Santuario de Prueba - Lago Atitlán\",\n  \"category\": \"Lago\",\n  \"department\": \"Sololá\",\n  \"municipality\": \"San Marcos La Laguna\",\n  \"location\": [\n    \"Lago de Atitlán, Sololá\",\n    \"Muelle privado frente a los volcanes\"\n  ],\n  \"description\": \"Chalet con piscina infinita climatizada, muelle privado y vista panorámica a los volcanes creado desde Postman.\",\n  \"pricePerNight\": 2800,\n  \"deposit\": 800,\n  \"cleaningFee\": 200,\n  \"guestsMax\": 8,\n  \"bedrooms\": 4,\n  \"beds\": 5,\n  \"bathrooms\": 3,\n  \"images\": [\n    \"https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200&q=80\",\n    \"https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80\"\n  ],\n  \"thumbnail\": \"https://images.unsplash.com/photo-1540541338287-41700207dee6?w=1200&q=80\",\n  \"amenities\": [\"Piscina infinita\", \"Muelle privado\", \"Wifi Starlink\"],\n  \"rules\": [\"No fumar dentro del chalet\", \"Música moderada después de las 22:00\"],\n  \"status\": \"disponible\",\n  \"coordinates\": { \"lat\": 14.7231, \"lng\": -91.2589 }\n}"
+            },
+            "url": "{{baseUrl}}/chalets"
+          }
+        },
+        {
+          "name": "20 - Actualizar Precio y Detalles del Chalet",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Precio actualizado en MongoDB', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pricePerNight\": 2950,\n  \"status\": \"disponible\"\n}"
+            },
+            "url": "{{baseUrl}}/chalets/{{chaletId}}"
+          }
+        },
+        {
+          "name": "21 - Cambiar Estado -> Reservado (Tiempo Real SSE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Estado cambiado a reservado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.status).to.eql('reservado');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"reservado\"\n}"
+            },
+            "url": "{{baseUrl}}/chalets/{{chaletId}}"
+          }
+        },
+        {
+          "name": "22 - Cambiar Estado -> En Mantenimiento (Tiempo Real SSE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Estado cambiado a mantenimiento', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.status).to.eql('mantenimiento');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"mantenimiento\"\n}"
+            },
+            "url": "{{baseUrl}}/chalets/{{chaletId}}"
+          }
+        },
+        {
+          "name": "23 - Cambiar Estado -> Disponible (Tiempo Real SSE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Estado restaurado a disponible', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.status).to.eql('disponible');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"disponible\"\n}"
+            },
+            "url": "{{baseUrl}}/chalets/{{chaletId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Citas, Reservas y Reseñas",
+      "item": [
+        {
+          "name": "24 - Pedir Cita / Visita al Chalet (Huésped)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data?._id) pm.collectionVariables.set('appointmentId', body.data._id);",
+                  "pm.test('Cita solicitada correctamente (pendiente)', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(body.data.bookingType).to.eql('cita');",
+                  "  pm.expect(body.data.status).to.eql('pendiente');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chaletId\": \"{{chaletId}}\",\n  \"bookingType\": \"cita\",\n  \"visitTime\": \"10:00 AM\",\n  \"guestName\": \"Huésped Postman\",\n  \"guestEmail\": \"{{guestEmail}}\",\n  \"guestPhone\": \"+502 5522-2002\",\n  \"checkIn\": \"{{futureVisitDate}}\",\n  \"checkOut\": \"{{futureVisitDate}}\",\n  \"guestsCount\": 2,\n  \"notes\": \"Quisiera conocer el chalet antes de reservar.\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings"
+          }
+        },
+        {
+          "name": "25 - Aceptar Cita (Anfitrión -> Habilita Chat)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Cita confirmada y chat desbloqueado', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.status).to.eql('confirmada');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmada\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings/{{appointmentId}}/status"
+          }
+        },
+        {
+          "name": "26 - Crear Reserva Nocturna (Huésped)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data?._id) pm.collectionVariables.set('bookingId', body.data._id);",
+                  "pm.test('Reserva creada y persistida en MongoDB', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(body.data.bookingType).to.eql('reserva');",
+                  "  pm.expect(body.data.totalPriceGTQ).to.be.above(0);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chaletId\": \"{{chaletId}}\",\n  \"bookingType\": \"reserva\",\n  \"status\": \"pendiente\",\n  \"guestName\": \"Huésped Postman\",\n  \"guestEmail\": \"{{guestEmail}}\",\n  \"guestPhone\": \"+502 5522-2002\",\n  \"checkIn\": \"{{futureCheckIn}}\",\n  \"checkOut\": \"{{futureCheckOut}}\",\n  \"guestsCount\": 2,\n  \"notes\": \"Reserva nocturna desde colección Postman\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings"
+          }
+        },
+        {
+          "name": "27 - Resumen Pendientes Anfitrión",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/bookings/summary"
+          }
+        },
+        {
+          "name": "28 - Mis Reservas y Citas",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/bookings"
+          }
+        },
+        {
+          "name": "29 - Ver Reserva por ID",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/bookings/{{bookingId}}"
+          }
+        },
+        {
+          "name": "30 - Confirmar Reserva (Anfitrión)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmada\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/status"
+          }
+        },
+        {
+          "name": "31 - Agregar Reseña al Chalet (Huésped)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Reseña creada en MongoDB', () => pm.response.to.have.status(201));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"comment\": \"Excelente vista al lago y atención inmediata del anfitrión.\",\n  \"cleanliness\": 5,\n  \"accuracy\": 5,\n  \"location\": 5,\n  \"communication\": 5,\n  \"value\": 5\n}"
+            },
+            "url": "{{baseUrl}}/chalets/{{chaletId}}/reviews"
+          }
+        },
+        {
+          "name": "32 - Cancelar Reserva (Huésped)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelada\"\n}"
+            },
+            "url": "{{baseUrl}}/bookings/{{bookingId}}/status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Mensajería Interna (Chat con Cita Aceptada)",
+      "item": [
+        {
+          "name": "33 - Verificar Elegibilidad de Chat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Chat habilitado tras cita aceptada', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().data.chatEnabled).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/messages/eligibility/{{ownerId}}?chaletId={{chaletId}}"
+          }
+        },
+        {
+          "name": "34 - Enviar Mensaje (Huésped -> Anfitrión)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Mensaje enviado y guardado en MongoDB', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().data.content).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"{{ownerId}}\",\n  \"chaletId\": \"{{chaletId}}\",\n  \"content\": \"Hola, gracias por aceptar la cita. ¿A qué hora nos vemos en el embarcadero?\"\n}"
+            },
+            "url": "{{baseUrl}}/messages"
+          }
+        },
+        {
+          "name": "35 - Responder Mensaje (Anfitrión -> Huésped)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"{{guestId}}\",\n  \"chaletId\": \"{{chaletId}}\",\n  \"content\": \"¡Con gusto! Te espero puntualmente a las 10:00 AM en la entrada principal.\"\n}"
+            },
+            "url": "{{baseUrl}}/messages"
+          }
+        },
+        {
+          "name": "36 - Listar Conversaciones Activas",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/messages/conversations"
+          }
+        },
+        {
+          "name": "37 - Ver Hilo con Anfitrión (Marca Leídos)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{guestToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/messages/with/{{ownerId}}?chaletId={{chaletId}}"
+          }
+        },
+        {
+          "name": "38 - Contador de Mensajes No Leídos",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "GET",
+            "url": "{{baseUrl}}/messages/unread-count"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Limpieza (Opcional)",
+      "item": [
+        {
+          "name": "39 - Eliminar Chalet de Prueba",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Chalet de prueba eliminado', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": "{{baseUrl}}/chalets/{{chaletId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Uso Manual (Google OAuth, Archivos y Streams SSE)",
+      "item": [
+        {
+          "name": "Google Sign-In (Pegar ID Token de Google)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": \"PEGA_AQUI_EL_GOOGLE_ID_TOKEN\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/google"
+          }
+        },
+        {
+          "name": "Subir Imágenes (Seleccionar Archivo en Form-Data)",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "images", "type": "file", "src": "" }]
+            },
+            "url": "{{baseUrl}}/uploads/images"
+          }
+        },
+        {
+          "name": "SSE Stream Autenticado (Conexión en Vivo)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events/stream?token={{hostToken}}"
+          }
+        },
+        {
+          "name": "SSE Stream Público (Estados de Chalet en Vivo)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events/public-stream"
+          }
+        }
       ]
     }
   ]

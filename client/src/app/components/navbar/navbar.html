@@ -13,8 +13,17 @@
       <a routerLink="/explore" routerLinkActive="active" class="nav-item">
         <span>Explorar</span>
       </a>
+      <a routerLink="/bookings" routerLinkActive="active" class="nav-item">
+        <span>Citas y Reservas</span>
+        @if (realtime.pendingHostBookings() > 0) {
+          <span class="nav-live-badge" title="Solicitudes pendientes en tus chalets">{{ realtime.pendingHostBookings() }}</span>
+        }
+      </a>
       <a routerLink="/messages" routerLinkActive="active" class="nav-item">
         <span>Mensajes</span>
+        @if (realtime.unreadMessages() > 0) {
+          <span class="nav-live-badge" title="Mensajes sin leer">{{ realtime.unreadMessages() }}</span>
+        }
       </a>
     </nav>
 
@@ -41,15 +50,99 @@
         }
       </a>
 
-      <button class="user-menu" (click)="logout()" title="Cerrar sesión">
-        @if (auth.user()?.picture) {
-          <img [src]="auth.user()?.picture" [alt]="auth.user()?.name">
-        } @else {
+      @if (auth.isAuthenticated()) {
+        <div class="user-menu-wrapper">
+          <button
+            type="button"
+            class="user-menu"
+            (click)="toggleUserMenu($event)"
+            [attr.aria-expanded]="isUserMenuOpen"
+            title="Mi perfil y citas">
+            <img
+              [src]="auth.user()?.picture | safeAvatar:auth.user()?._id:auth.user()?.name"
+              [alt]="auth.user()?.name || 'Mi perfil'"
+              appAvatarFallback>
+            <span>{{ auth.user()?.name?.split(' ')?.[0] }}</span>
+            @if (realtime.pendingHostBookings() > 0) {
+              <span class="nav-live-badge" title="Citas pendientes de aceptar">{{ realtime.pendingHostBookings() }}</span>
+            } @else if (realtime.isConnected()) {
+              <span class="live-dot" title="Conectado en tiempo real"></span>
+            }
+            <i class="fa-solid fa-chevron-down" [class.is-open]="isUserMenuOpen"></i>
+          </button>
+
+          @if (isUserMenuOpen) {
+            <div class="user-dropdown" role="menu">
+              <div class="user-dropdown-header">
+                <img
+                  class="user-dropdown-avatar"
+                  [src]="auth.user()?.picture | safeAvatar:auth.user()?._id:auth.user()?.name"
+                  [alt]="auth.user()?.name || 'Mi perfil'"
+                  appAvatarFallback>
+                <div class="user-dropdown-identity">
+                  <strong>{{ auth.user()?.name }}</strong>
+                  <span>{{ auth.user()?.email }}</span>
+                  <span class="user-role-pill">
+                    <i class="fa-solid" [class.fa-house-user]="auth.user()?.role === 'host'" [class.fa-user]="auth.user()?.role !== 'host'"></i>
+                    {{ auth.user()?.role === 'host' ? 'Propietario / Anfitrión' : (auth.user()?.role === 'admin' ? 'Administrador' : 'Cliente') }}
+                  </span>
+                </div>
+              </div>
+
+              <button type="button" class="user-dropdown-item" (click)="goToProfile()">
+                <i class="fa-solid fa-id-card"></i>
+                <span>Ver Mi Perfil</span>
+              </button>
+
+              <a
+                routerLink="/bookings"
+                [queryParams]="{ tab: 'host' }"
+                (click)="closeMenus()"
+                class="user-dropdown-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Citas y Reservas Recibidas</span>
+                @if (realtime.pendingHostBookings() > 0) {
+                  <span class="nav-live-badge">{{ realtime.pendingHostBookings() }}</span>
+                }
+              </a>
+
+              <a
+                routerLink="/bookings"
+                [queryParams]="{ tab: 'guest' }"
+                (click)="closeMenus()"
+                class="user-dropdown-item">
+                <i class="fa-solid fa-suitcase"></i>
+                <span>Mis Solicitudes</span>
+              </a>
+
+              <a routerLink="/messages" (click)="closeMenus()" class="user-dropdown-item">
+                <i class="fa-solid fa-comments"></i>
+                <span>Mensajes</span>
+                @if (realtime.unreadMessages() > 0) {
+                  <span class="nav-live-badge">{{ realtime.unreadMessages() }}</span>
+                }
+              </a>
+
+              <a routerLink="/publish" (click)="closeMenus()" class="user-dropdown-item">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>Publicar Chalet</span>
+              </a>
+
+              <div class="user-dropdown-divider"></div>
+
+              <button type="button" class="user-dropdown-item is-danger" (click)="logout()">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <a routerLink="/login" class="user-menu">
           <i class="fa-solid fa-user"></i>
-        }
-        <span>{{ auth.user()?.name?.split(' ')?.[0] }}</span>
-        <i class="fa-solid fa-right-from-bracket"></i>
-      </button>
+          <span>Iniciar sesión</span>
+        </a>
+      }
 
       <!-- Mobile Hamburger Button -->
       <button class="menu-toggle" (click)="toggleMenu()" aria-label="Abrir menú">
@@ -69,9 +162,19 @@
         <i class="fa-solid fa-compass"></i>
         <span>Explorar Chalets de Guatemala</span>
       </a>
+      <a routerLink="/bookings" (click)="toggleMenu()" class="mobile-nav-item">
+        <i class="fa-solid fa-calendar-check"></i>
+        <span>Citas y Reservas</span>
+        @if (realtime.pendingHostBookings() > 0) {
+          <span class="nav-live-badge">{{ realtime.pendingHostBookings() }}</span>
+        }
+      </a>
       <a routerLink="/messages" (click)="toggleMenu()" class="mobile-nav-item">
         <i class="fa-solid fa-comments"></i>
         <span>Mensajes</span>
+        @if (realtime.unreadMessages() > 0) {
+          <span class="nav-live-badge">{{ realtime.unreadMessages() }}</span>
+        }
       </a>
       <a routerLink="/explore" [queryParams]="{favorites: 'true'}" (click)="toggleMenu()" class="mobile-nav-item">
         <i class="fa-solid fa-heart text-danger"></i>
@@ -81,10 +184,32 @@
         <i class="fa-solid fa-plus-circle"></i>
         <span>Publicar mi Chalet</span>
       </a>
-      <button type="button" (click)="logout()" class="mobile-nav-item mobile-logout">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        <span>Cerrar sesión</span>
-      </button>
+      @if (auth.isAuthenticated()) {
+        <button type="button" (click)="goToProfile()" class="mobile-nav-item mobile-profile-btn">
+          <i class="fa-solid fa-id-card"></i>
+          <span>Mi Perfil</span>
+        </button>
+        <a
+          routerLink="/bookings"
+          [queryParams]="{ tab: 'host' }"
+          (click)="closeMenus()"
+          class="mobile-nav-item">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Citas y Reservas Recibidas</span>
+          @if (realtime.pendingHostBookings() > 0) {
+            <span class="nav-live-badge">{{ realtime.pendingHostBookings() }}</span>
+          }
+        </a>
+        <button type="button" (click)="logout()" class="mobile-nav-item mobile-logout">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Cerrar sesión</span>
+        </button>
+      } @else {
+        <a routerLink="/login" (click)="toggleMenu()" class="mobile-nav-item">
+          <i class="fa-solid fa-user"></i>
+          <span>Iniciar sesión</span>
+        </a>
+      }
       <div class="mobile-currency-row">
         <span>Moneda activa:</span>
         <button class="currency-toggle" (click)="toggleCurrency()">

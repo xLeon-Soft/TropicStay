@@ -18,7 +18,11 @@
     <div class="host-header-card glass-panel">
       <div class="host-header-left">
         <div class="host-avatar-box">
-          <img [src]="host.avatar" [alt]="host.name" class="profile-avatar" />
+          <img
+            [src]="host.avatar | safeAvatar:host._id:host.name"
+            [alt]="host.name"
+            class="profile-avatar"
+            appAvatarFallback />
           @if (host.superhost) {
             <span class="superhost-crown" title="Superanfitrión Verificado">
               <i class="fa-solid fa-crown"></i>
@@ -55,7 +59,10 @@
       <div class="host-header-right">
         <h1 class="host-full-name">{{ host.name }}</h1>
         <p class="host-location-text">
-          <i class="fa-solid fa-user-check"></i> Anfitrión en TropicStay desde {{ host.memberSince }}
+          <i class="fa-solid fa-user-check"></i>
+          {{ (isOwnProfile ? auth.user()?.role : host.role) === 'host' ? 'Propietario / Anfitrión' : ((isOwnProfile ? auth.user()?.role : host.role) === 'admin' ? 'Administrador' : 'Cliente') }}
+          en TropicStay desde {{ host.memberSince }}
+          • <i class="fa-solid fa-phone"></i> {{ host.phone || '+502 5555-0000' }}
         </p>
 
         <div class="host-biography">
@@ -64,22 +71,200 @@
         </div>
 
         <div class="host-contact-box">
-          <button class="btn-primary" (click)="openChat()">
-            <i class="fa-solid fa-comments"></i> Abrir chat
-          </button>
-          <a [href]="getWhatsAppLink()" target="_blank" rel="noopener noreferrer" class="btn-whatsapp" title="Chatear por WhatsApp">
-            <i class="fa-brands fa-whatsapp"></i> Chat WhatsApp ({{ host.phone || '+502 5555-0000' }})
-          </a>
+          @if (isOwnProfile) {
+            <button type="button" class="btn-primary" (click)="openEditProfile()">
+              <i class="fa-solid fa-pen-to-square"></i> Editar mi Perfil
+            </button>
+            <a routerLink="/bookings" [queryParams]="{tab: 'host'}" class="btn-outline">
+              <i class="fa-solid fa-calendar-check"></i> Citas y Reservas ({{ pendingHostBookingsCount }})
+            </a>
+            <a routerLink="/publish" class="btn-accent">
+              <i class="fa-solid fa-plus-circle"></i> Publicar otro Chalet
+            </a>
+          } @else {
+            <button type="button" class="btn-primary" (click)="openChat()">
+              <i class="fa-solid" [class.fa-comments]="chatEligibility.chatEnabled" [class.fa-calendar-check]="!chatEligibility.chatEnabled"></i>
+              {{ chatEligibility.chatEnabled ? ('Chatear con ' + host.name) : (chatEligibility.appointmentStatus === 'pendiente' ? 'Cita pendiente (chat al aceptar)' : 'Pedir cita para habilitar chat') }}
+            </button>
+            @if (hostChatLockHint) {
+              <p class="host-chat-lock-hint"><i class="fa-solid fa-circle-info"></i> {{ hostChatLockHint }}</p>
+            }
+          }
         </div>
       </div>
     </div>
+
+    @if (isOwnProfile) {
+      <section class="host-appointments-section" id="citas-y-reservas">
+        <div class="appointments-header">
+          <div>
+            <span class="section-tag">
+              Panel de Propietario
+              <span class="live-status-pill" [class.is-online]="realtime.isConnected()">
+                <span class="live-pulse"></span>
+                {{ realtime.isConnected() ? 'Tiempo real' : 'Conectando...' }}
+              </span>
+            </span>
+            <h2 class="section-title">Citas y Reservas de tus Chalets</h2>
+            <p class="appointments-subtitle">
+              Acepta aquí las citas enviadas por tus clientes para habilitar automáticamente el chat dentro de la página web.
+            </p>
+          </div>
+          <div class="appointments-header-actions">
+            <div class="appointments-tabs">
+              <button
+                type="button"
+                class="filter-tab"
+                [class.active]="hostBookingFilter === 'pendiente'"
+                (click)="hostBookingFilter = 'pendiente'">
+                Pendientes ({{ pendingHostBookingsCount }})
+              </button>
+              <button
+                type="button"
+                class="filter-tab"
+                [class.active]="hostBookingFilter === 'confirmada'"
+                (click)="hostBookingFilter = 'confirmada'">
+                Aceptadas ({{ confirmedHostBookingsCount }})
+              </button>
+              <button
+                type="button"
+                class="filter-tab"
+                [class.active]="hostBookingFilter === 'all'"
+                (click)="hostBookingFilter = 'all'">
+                Todas ({{ hostBookings.length }})
+              </button>
+            </div>
+            <a routerLink="/bookings" [queryParams]="{tab: 'host'}" class="btn-outline btn-compact">
+              <i class="fa-solid fa-up-right-from-square"></i> Vista completa
+            </a>
+          </div>
+        </div>
+
+        @if (bookingActionFeedback) {
+          <div class="booking-alert is-success">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>{{ bookingActionFeedback }}</span>
+          </div>
+        }
+
+        @if (bookingActionError) {
+          <div class="booking-alert is-error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ bookingActionError }}</span>
+          </div>
+        }
+
+        @if (isLoadingHostBookings) {
+          <div class="appointments-empty">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <p>Cargando solicitudes recibidas...</p>
+          </div>
+        } @else if (filteredHostBookings.length === 0) {
+          <div class="appointments-empty">
+            <i class="fa-regular fa-calendar"></i>
+            @if (hostBookingFilter === 'pendiente' && hostBookings.length > 0) {
+              <p>No tienes citas o reservas pendientes por revisar en este momento.</p>
+              <button type="button" class="btn-outline btn-compact" (click)="hostBookingFilter = 'all'">
+                Ver historial ({{ hostBookings.length }})
+              </button>
+            } @else {
+              <p>Aún no has recibido citas o reservas para tus chalets.</p>
+            }
+          </div>
+        } @else {
+          <div class="appointments-grid">
+            @for (booking of filteredHostBookings; track booking._id) {
+              <article class="appointment-card" [class.is-pending]="booking.status === 'pendiente'">
+                <div class="appointment-card-top">
+                  <div class="appointment-badges">
+                    <span class="type-pill" [class.is-cita]="booking.bookingType === 'cita'">
+                      <i class="fa-solid" [class.fa-calendar-day]="booking.bookingType === 'cita'" [class.fa-bed]="booking.bookingType !== 'cita'"></i>
+                      {{ booking.bookingType === 'cita' ? 'Cita previa' : 'Reserva' }}
+                    </span>
+                    <span class="status-pill" [ngClass]="'status-' + booking.status">
+                      {{ booking.status === 'confirmada' ? 'Aceptada' : (booking.status === 'pendiente' ? 'Pendiente' : 'Cancelada') }}
+                    </span>
+                  </div>
+                  <strong class="appointment-price">
+                    {{ booking.bookingType === 'cita' ? 'Visita sin costo' : formatCurrency(booking.totalPriceGTQ) }}
+                  </strong>
+                </div>
+
+                <h3 class="appointment-chalet">{{ booking.chalet?.title || 'Chalet en TropicStay' }}</h3>
+
+                <div class="appointment-meta">
+                  <div>
+                    <i class="fa-solid fa-user"></i>
+                    <span><strong>Huésped:</strong> {{ booking.guestName }}</span>
+                  </div>
+                  <div>
+                    <i class="fa-solid fa-envelope"></i>
+                    <span>{{ booking.guestEmail }}</span>
+                  </div>
+                  <div>
+                    <i class="fa-solid fa-calendar"></i>
+                    @if (booking.bookingType === 'cita') {
+                      <span>Visita: {{ booking.checkIn | date:'dd MMM yyyy' }} {{ booking.visitTime ? ('• ' + booking.visitTime) : '' }}</span>
+                    } @else {
+                      <span>{{ booking.checkIn | date:'dd MMM' }} → {{ booking.checkOut | date:'dd MMM yyyy' }} ({{ booking.nights }} noche{{ booking.nights > 1 ? 's' : '' }})</span>
+                    }
+                  </div>
+                  <div>
+                    <i class="fa-solid fa-users"></i>
+                    <span>{{ booking.guestsCount }} huésped{{ booking.guestsCount > 1 ? 'es' : '' }}</span>
+                  </div>
+                </div>
+
+                @if (booking.notes) {
+                  <p class="appointment-notes">"{{ booking.notes }}"</p>
+                }
+
+                <div class="appointment-actions">
+                  @if (booking.status === 'pendiente') {
+                    <button
+                      type="button"
+                      class="btn-primary btn-compact"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="updateBookingStatus(booking, 'confirmada')">
+                      <i class="fa-solid fa-check"></i>
+                      {{ booking.bookingType === 'cita' ? 'Aceptar Cita y Habilitar Chat' : 'Confirmar Reserva' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-danger-outline btn-compact"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="updateBookingStatus(booking, 'cancelada')">
+                      <i class="fa-solid fa-xmark"></i> Rechazar
+                    </button>
+                  } @else if (booking.status === 'confirmada') {
+                    <button
+                      type="button"
+                      class="btn-primary btn-compact"
+                      (click)="openGuestChat(booking)">
+                      <i class="fa-solid fa-comments"></i> Chatear con Huésped
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-danger-outline btn-compact"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="updateBookingStatus(booking, 'cancelada')">
+                      Cancelar
+                    </button>
+                  }
+                </div>
+              </article>
+            }
+          </div>
+        }
+      </section>
+    }
 
     <!-- Chalets Managed By This Host -->
     <div class="host-chalets-section">
       <div class="section-header">
         <div>
           <span class="section-tag">Propiedades Disponibles</span>
-          <h2 class="section-title">Chalets gestionados por {{ host.name }} ({{ host.chaletsCount }})</h2>
+          <h2 class="section-title">Chalets dados en alquiler por {{ host.name }} ({{ host.chaletsCount }})</h2>
         </div>
       </div>
 
@@ -90,51 +275,54 @@
       </div>
     </div>
 
-    <!-- Internal chat modal -->
-    @if (showMessageModal) {
-      <div class="modal-backdrop animate-fade" (click)="closeChat()">
-        <div class="modal-card chat-modal glass-panel" (click)="$event.stopPropagation()">
+    <!-- Edit Own Profile Modal -->
+    @if (showEditProfileModal) {
+      <div class="modal-backdrop animate-fade" (click)="showEditProfileModal = false">
+        <div class="modal-card glass-panel" (click)="$event.stopPropagation()">
           <div class="modal-header">
-            <div>
-              <h3>Chat con {{ host.name }}</h3>
-              <p class="chat-status"><i class="fa-solid fa-circle-check"></i> Anfitrión verificado</p>
+            <h3><i class="fa-solid fa-user-pen"></i> Editar mi Perfil</h3>
+            <button class="close-modal-btn" (click)="showEditProfileModal = false">&times;</button>
+          </div>
+
+          <form (ngSubmit)="saveProfile()" class="edit-profile-form">
+            <div class="profile-form-group">
+              <label>Nombre Completo *</label>
+              <input type="text" [(ngModel)]="editName" name="editName" required />
             </div>
-            <button class="close-modal-btn" (click)="closeChat()" aria-label="Cerrar chat">&times;</button>
-          </div>
 
-          <div class="chat-thread" aria-live="polite">
-            @if (isChatLoading) {
-              <div class="chat-loading"><span class="spinner"></span> Cargando conversación...</div>
-            } @else if (chatMessages.length === 0) {
-              <div class="chat-empty"><i class="fa-regular fa-comments"></i><p>Inicia la conversación. {{ host.name }} suele responder en {{ host.responseTime }}.</p></div>
-            } @else {
-              @for (message of chatMessages; track message._id) {
-                <div class="chat-bubble" [class.is-mine]="message.isMine">
-                  <p>{{ message.content }}</p>
-                  <span>{{ formatMessageTime(message.createdAt) }}</span>
-                </div>
-              }
+            <div class="profile-form-group">
+              <label>Teléfono de contacto (Guatemala) *</label>
+              <input type="tel" [(ngModel)]="editPhone" name="editPhone" placeholder="+502 5555-1234" required />
+            </div>
+
+            @if (auth.user()?.role !== 'admin') {
+              <div class="profile-form-group">
+                <label for="editRole">Tipo de cuenta (Rol en TropicStay)</label>
+                <select id="editRole" [(ngModel)]="editRole" name="editRole">
+                  <option value="guest">Cliente (explorar, pedir citas y alquilar chalets)</option>
+                  <option value="host">Propietario / Anfitrión (publicar y gestionar chalets)</option>
+                </select>
+              </div>
             }
-          </div>
 
-          @if (chatError) {
-            <p class="chat-error"><i class="fa-solid fa-circle-exclamation"></i> {{ chatError }}</p>
-          }
+            <div class="profile-form-group">
+              <label>Tiempo de Respuesta Promedio</label>
+              <input type="text" [(ngModel)]="editResponseTime" name="editResponseTime" placeholder="Ej: menos de 15 min" />
+            </div>
 
-          <form (ngSubmit)="sendChatMessage()" class="chat-composer">
-            <textarea
-              [(ngModel)]="messageText"
-              name="message"
-              rows="3"
-              maxlength="2000"
-              placeholder="Escribe tu pregunta sobre el chalet..."
-              [disabled]="isSendingMessage"
-              required>
-            </textarea>
+            <div class="profile-form-group">
+              <label>Sobre mí (Biografía de Anfitrión)</label>
+              <textarea [(ngModel)]="editBio" name="editBio" rows="3"></textarea>
+            </div>
+
+            @if (profileSaveError) {
+              <p class="chat-error">{{ profileSaveError }}</p>
+            }
+
             <div class="modal-actions">
-              <button type="button" class="btn-outline" (click)="closeChat()">Cerrar</button>
-              <button type="submit" class="btn-primary" [disabled]="isSendingMessage || !messageText.trim()">
-                <i class="fa-solid fa-paper-plane"></i> {{ isSendingMessage ? 'Enviando...' : 'Enviar mensaje' }}
+              <button type="button" class="btn-outline" (click)="showEditProfileModal = false">Cancelar</button>
+              <button type="submit" class="btn-primary" [disabled]="isSavingProfile">
+                {{ isSavingProfile ? 'Guardando...' : 'Guardar Cambios' }}
               </button>
             </div>
           </form>

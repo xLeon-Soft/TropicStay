@@ -184,7 +184,7 @@
             @if (featuredHosts().length > 0) {
               @for (h of featuredHosts(); track h._id) {
                 <a [routerLink]="['/host', h._id]" class="host-avatar-card clickable-host-card" title="Ver perfil y chalets de {{ h.name }}">
-                  <img [src]="h.avatar" [alt]="h.name" class="host-avatar-img" />
+                  <img [src]="h.avatar | safeAvatar:h._id:h.name" [alt]="h.name" class="host-avatar-img" appAvatarFallback />
                   <div>
                     <strong>{{ h.name }}</strong>
                     <span>{{ h.rating }} ★</span>

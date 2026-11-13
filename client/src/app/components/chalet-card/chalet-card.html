@@ -20,6 +20,17 @@
       </div>
     </div>
 
+    <!-- Status Floating Pill -->
+    <div class="card-status-pill" [attr.data-status]="chalet.status || 'disponible'">
+      @if ((chalet.status || 'disponible') === 'disponible') {
+        <i class="fa-solid fa-circle-check"></i> Disponible
+      } @else if (chalet.status === 'reservado') {
+        <i class="fa-solid fa-calendar-check"></i> Reservado
+      } @else {
+        <i class="fa-solid fa-wrench"></i> En Mantenimiento
+      }
+    </div>
+
     <!-- Rating Floating Pill -->
     <div class="card-rating-pill">
       <i class="fa-solid fa-star"></i>
@@ -45,7 +56,7 @@
 
       @if (chalet.host) {
         <div class="host-pill clickable-host-pill" (click)="goToHost($event)" title="Ver perfil del anfitrión: {{ chalet.host.name }}">
-          <img [src]="chalet.host.avatar" [alt]="chalet.host.name" class="host-thumb" />
+          <img [src]="chalet.host.avatar | safeAvatar:chalet.host._id:chalet.host.name" [alt]="chalet.host.name" class="host-thumb" appAvatarFallback />
           @if (chalet.host.superhost) {
             <span class="superhost-dot" title="Superanfitrión">★</span>
           }

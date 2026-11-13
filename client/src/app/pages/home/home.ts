@@ -1,10 +1,13 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { ChaletService } from '../../services/chalet.service';
+import { RealtimeService } from '../../services/realtime.service';
 import { Chalet, Host } from '../../models/chalet.model';
 import { SearchBarComponent } from '../../components/search-bar/search-bar';
 import { ChaletCardComponent } from '../../components/chalet-card/chalet-card';
+import { AvatarFallbackDirective, SafeAvatarPipe } from '../../utils/avatar.util';
 
 interface MoodCollection {
   emoji: string;
@@ -30,12 +33,14 @@ interface HeroVideo {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, SearchBarComponent, ChaletCardComponent],
+  imports: [CommonModule, RouterLink, SearchBarComponent, ChaletCardComponent, SafeAvatarPipe, AvatarFallbackDirective],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
 export class HomeComponent implements OnInit {
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+  private realtime = inject(RealtimeService);
   chaletService = inject(ChaletService);
   readonly featuredChalets = signal<Chalet[]>([]);
   readonly featuredHosts = signal<Host[]>([]);
@@ -122,6 +127,22 @@ export class HomeComponent implements OnInit {
   ngOnInit(): void {
     this.loadChalets();
     this.loadHosts();
+
+    this.realtime.chaletEvents$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event) => {
+        if (event.type === 'updated' && event.chalet) {
+          this.featuredChalets.update((list) =>
+            list.map((c) => (c._id === event.chalet!._id ? { ...c, ...event.chalet! } : c))
+          );
+        } else if (event.type === 'created' && event.chalet) {
+          this.featuredChalets.update((list) =>
+            list.some((c) => c._id === event.chalet!._id) ? list : [event.chalet!, ...list]
+          );
+        } else if (event.type === 'deleted' && event.chaletId) {
+          this.featuredChalets.update((list) => list.filter((c) => c._id !== event.chaletId));
+        }
+      });
   }
 
   loadChalets(): void {
@@ -194,7 +215,7 @@ export class HomeComponent implements OnInit {
   }
 
   private setMoodCollections(chalets: Chalet[]): void {
-    const availableCategories = new Set(chalets.map((chalet) => chalet.category));
+    const availableCategories = new Set<string>(chalets.map((chalet) => chalet.category));
     this.moodCollections.set(this.moodCollectionDefinitions
       .filter((collection) => availableCategories.has(collection.category)));
   }

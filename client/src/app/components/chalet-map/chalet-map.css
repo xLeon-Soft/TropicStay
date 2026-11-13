@@ -58,6 +58,22 @@
   color: #FFFFFF;
 }
 
+.btn-route-active {
+  background: #D97736;
+  color: #FFFFFF;
+  border-color: #B8591B;
+}
+
+.btn-route-active:hover {
+  background: #B8591B;
+  color: #FFFFFF;
+}
+
+.map-ctrl-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 /* Loading route indicator */
 .route-loading-pill {
   position: absolute;
@@ -150,6 +166,12 @@
   border-radius: var(--radius-sm);
   font-weight: 700;
   color: var(--text-main);
+}
+
+.stat-estimated {
+  background: #FFF7ED;
+  border-color: rgba(217, 119, 54, 0.35);
+  color: #B45309;
 }
 
 .stat-origin {
@@ -400,13 +422,31 @@
   color: #fff !important;
   text-align: center;
   flex: 1;
-  padding: 0.55rem 1rem;
-  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.82rem;
   border-radius: 10px;
-
   font-weight: 700;
-
   text-decoration: none;
+}
+
+:host ::ng-deep .popup-btn-trace {
+  background: #D97736;
+  color: #FFFFFF !important;
+  border: none;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  transition: background var(--transition-fast);
+}
+
+:host ::ng-deep .popup-btn-trace:hover {
+  background: #B8591B;
 }
 
 :host ::ng-deep .popup-btn-route {

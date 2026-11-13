@@ -7,5 +7,31 @@
   </main>
   @if (!isLoginRoute()) {
     <app-footer></app-footer>
+    <app-chat-dock></app-chat-dock>
   }
+
+  <!-- Real-time Notification Toasts -->
+  @if (realtime.notifications().length > 0) {
+    <aside class="realtime-toast-stack" aria-live="polite" aria-label="Notificaciones en tiempo real">
+      @for (note of realtime.notifications(); track note.id) {
+        <div class="realtime-toast glass-panel animate-fade" [class.is-booking]="note.kind === 'booking'">
+          <button type="button" class="toast-main" (click)="openNotification(note)">
+            <span class="toast-icon">
+              <i class="fa-solid" [class.fa-calendar-check]="note.kind === 'booking'" [class.fa-comments]="note.kind === 'message'"></i>
+            </span>
+            <span class="toast-copy">
+              <strong>{{ note.title }}</strong>
+              <small>{{ note.body }}</small>
+              <span class="toast-cta">Abrir ahora →</span>
+            </span>
+          </button>
+          <button type="button" class="toast-close" (click)="realtime.dismissNotification(note.id)" aria-label="Cerrar notificación">
+            &times;
+          </button>
+        </div>
+      }
+    </aside>
+  }
+
+  <app-ui-dialog-host></app-ui-dialog-host>
 </div>

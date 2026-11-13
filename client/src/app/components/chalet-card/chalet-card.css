@@ -102,6 +102,40 @@
   box-shadow: 0 4px 12px rgba(21, 51, 43, 0.35);
 }
 
+.card-status-pill {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  padding: 0.26rem 0.65rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+}
+
+.card-status-pill[data-status="disponible"] {
+  background: rgba(236, 253, 245, 0.95);
+  color: #166534;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+}
+
+.card-status-pill[data-status="reservado"] {
+  background: rgba(254, 243, 199, 0.96);
+  color: #92400E;
+  border: 1px solid rgba(245, 158, 11, 0.55);
+}
+
+.card-status-pill[data-status="mantenimiento"] {
+  background: rgba(254, 226, 226, 0.96);
+  color: #991B1B;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
 .card-rating-pill {
   position: absolute;
   bottom: 12px;

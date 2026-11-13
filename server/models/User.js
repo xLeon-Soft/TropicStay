@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  passwordHash: {
+    type: String,
+    select: false,
+  },
   phone: {
     type: String,
     default: '+502 5555-0000',

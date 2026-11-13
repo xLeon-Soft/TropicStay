@@ -3,8 +3,13 @@
   "version": "1.0.0",
   "description": "TropicStay - Plataforma de Alquiler de Chalets en Guatemala (Angular + Node.js + MongoDB)",
   "scripts": {
+    "build": "cd client && npm run build",
+    "start": "cd server && node index.js",
     "start:server": "cd server && node index.js",
     "start:client": "cd client && ng serve --open",
+    "test": "cd server && npm test && cd ../client && npx ng test --watch=false",
+    "test:server": "cd server && npm test",
+    "test:client": "cd client && npx ng test --watch=false",
     "seed": "cd server && npm run seed",
     "migrate:locations": "cd server && npm run migrate:locations"
   },

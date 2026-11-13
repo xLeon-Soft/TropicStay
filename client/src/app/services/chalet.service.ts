@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, shareReplay, tap } from 'rxjs';
-import { Chalet, FilterParams, Review, Host } from '../models/chalet.model';
+import { BookedDateRange, Chalet, FilterParams, Review, Host } from '../models/chalet.model';
 import { environment } from '../../environments/environment';
 
 export interface DestinationOption {
@@ -21,7 +21,25 @@ export class ChaletService {
 
   // State signals
   currency = signal<'GTQ' | 'USD'>('GTQ');
+  exchangeRate = signal<number>(7.78);
   favorites = signal<string[]>(this.loadFavorites());
+
+  constructor() {
+    this.loadExchangeRate();
+  }
+
+  private loadExchangeRate(): void {
+    this.http.get<{ success: boolean; data: { gtqPerUsd: number } }>(`${this.apiUrl}/currency/usd`).subscribe({
+      next: (res) => {
+        if (res.success && res.data?.gtqPerUsd > 0) {
+          this.exchangeRate.set(res.data.gtqPerUsd);
+        }
+      },
+      error: () => {
+        // Keep fallback rate 7.78
+      }
+    });
+  }
 
   // Toggle favorite
   toggleFavorite(chaletId: string): void {
@@ -57,7 +75,8 @@ export class ChaletService {
 
   formatPrice(priceGTQ: number, priceUSD?: number): string {
     if (this.currency() === 'USD') {
-      const usd = priceUSD || Math.round(priceGTQ / 7.78);
+      const rate = this.exchangeRate() || 7.78;
+      const usd = priceUSD || Math.round(priceGTQ / rate);
       return `$${usd.toLocaleString('en-US')}`;
     }
     return `Q${priceGTQ.toLocaleString('es-GT')}`;
@@ -85,20 +104,57 @@ export class ChaletService {
       if (params.guests) httpParams = httpParams.set('guests', params.guests.toString());
       if (params.minRating) httpParams = httpParams.set('minRating', params.minRating.toString());
       if (params.amenities) httpParams = httpParams.set('amenities', params.amenities);
+      if (params.checkIn) httpParams = httpParams.set('checkIn', params.checkIn);
+      if (params.checkOut) httpParams = httpParams.set('checkOut', params.checkOut);
       if (params.sort) httpParams = httpParams.set('sort', params.sort);
     }
 
     return this.http.get<{ success: boolean; count: number; data: Chalet[] }>(`${this.apiUrl}/chalets`, { params: httpParams })
-      .pipe(map(res => res.data));
+      .pipe(map(res => (res.data || []).map(item => this.normalizeChalet(item))));
   }
 
   getChaletById(id: string): Observable<Chalet> {
     return this.http.get<{ success: boolean; data: Chalet }>(`${this.apiUrl}/chalets/${id}`)
+      .pipe(map(res => this.normalizeChalet(res.data)));
+  }
+
+  private normalizeChalet(chalet: Chalet & { locationName?: string }): Chalet {
+    const rawLocation = (chalet as { location?: string[] | string; locationName?: string }).location;
+    const location = Array.isArray(rawLocation) && rawLocation.length > 0
+      ? rawLocation.filter(Boolean)
+      : typeof rawLocation === 'string' && rawLocation.trim()
+        ? rawLocation.split(',').map(part => part.trim()).filter(Boolean)
+        : typeof chalet.locationName === 'string' && chalet.locationName.trim()
+          ? [chalet.locationName.trim()]
+          : [chalet.municipality, chalet.department].filter(Boolean);
+    const images = Array.isArray(chalet.images) ? chalet.images.filter(Boolean) : [];
+    return {
+      ...chalet,
+      location: location.length > 0 ? location : ['Guatemala'],
+      images,
+      thumbnail: chalet.thumbnail || images[0] || '',
+      amenities: Array.isArray(chalet.amenities) ? chalet.amenities : [],
+      rules: Array.isArray(chalet.rules) ? chalet.rules : [],
+    };
+  }
+
+  getBookedDates(id: string): Observable<BookedDateRange[]> {
+    return this.http.get<{ success: boolean; data: BookedDateRange[] }>(`${this.apiUrl}/chalets/${id}/booked-dates`)
       .pipe(map(res => res.data));
   }
 
   createChalet(chaletData: any): Observable<{ success: boolean; data: Chalet }> {
     return this.http.post<{ success: boolean; data: Chalet }>(`${this.apiUrl}/chalets`, chaletData)
+      .pipe(tap(() => this.invalidateCatalogCache()));
+  }
+
+  updateChalet(id: string, chaletData: any): Observable<{ success: boolean; message: string; data: Chalet }> {
+    return this.http.put<{ success: boolean; message: string; data: Chalet }>(`${this.apiUrl}/chalets/${id}`, chaletData)
+      .pipe(tap(() => this.invalidateCatalogCache()));
+  }
+
+  deleteChalet(id: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/chalets/${id}`)
       .pipe(tap(() => this.invalidateCatalogCache()));
   }
 
@@ -109,7 +165,8 @@ export class ChaletService {
   }
 
   addReview(chaletId: string, review: Partial<Review>): Observable<any> {
-    return this.http.post(`${this.apiUrl}/chalets/${chaletId}/reviews`, review);
+    return this.http.post(`${this.apiUrl}/chalets/${chaletId}/reviews`, review)
+      .pipe(tap(() => this.invalidateCatalogCache()));
   }
 
   getDepartments(): Observable<string[]> {
@@ -135,7 +192,7 @@ export class ChaletService {
     return this.hosts$;
   }
 
-  private invalidateCatalogCache(): void {
+  invalidateCatalogCache(): void {
     this.allChalets$ = undefined;
     this.destinations$ = undefined;
     this.hosts$ = undefined;

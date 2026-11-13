@@ -16,7 +16,7 @@ exports.getHosts = async (req, res) => {
 // GET /api/hosts/:id
 exports.getHostById = async (req, res) => {
   try {
-    setPublicCache(res);
+    res.set('Cache-Control', 'no-store');
     const host = await User.findById(req.params.id).lean();
     if (!host) {
       return res.status(404).json({ success: false, message: 'Anfitrión no encontrado' });

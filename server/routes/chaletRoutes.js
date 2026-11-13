@@ -7,6 +7,7 @@ const { protect } = require('../middleware/authMiddleware');
 router.get('/', chaletController.getChalets);
 router.get('/meta/departments', chaletController.getDepartments);
 router.get('/meta/destinations', chaletController.getDestinations);
+router.get('/:id/booked-dates', chaletController.getBookedDates);
 router.get('/:id', chaletController.getChaletById);
 router.post('/', protect, chaletController.createChalet);
 router.put('/:id', protect, chaletController.updateChalet);

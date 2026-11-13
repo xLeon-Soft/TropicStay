@@ -8,7 +8,7 @@ const validChaletId = (id) => mongoose.Types.ObjectId.isValid(id);
 exports.addReview = async (req, res) => {
   try {
     const chaletId = req.params.id;
-    const { rating, comment, cleanliness, location, communication, value } = req.body;
+    const { rating, comment, cleanliness, accuracy, location, communication, value } = req.body;
 
     if (!validChaletId(chaletId)) {
       return res.status(400).json({ success: false, message: 'El identificador del chalet no es válido.' });
@@ -19,6 +19,10 @@ exports.addReview = async (req, res) => {
 
     const chalet = await Chalet.findById(chaletId);
     if (!chalet) return res.status(404).json({ success: false, message: 'Chalet no encontrado.' });
+
+    if (String(chalet.host) === String(req.user._id)) {
+      return res.status(403).json({ success: false, message: 'No puedes dejar una reseña en tu propio chalet.' });
+    }
 
     const review = await Review.create({
       chalet: chaletId,
@@ -39,7 +43,7 @@ exports.addReview = async (req, res) => {
     chalet.reviewsCount = allReviews.length;
     chalet.ratingBreakdown = {
       cleanliness: average('cleanliness'),
-      accuracy: average('rating'),
+      accuracy: Number(accuracy) ? Number((( (chalet.ratingBreakdown?.accuracy || 5) * (allReviews.length - 1) + Number(accuracy) ) / allReviews.length).toFixed(1)) : average('rating'),
       communication: average('communication'),
       location: average('location'),
       value: average('value'),

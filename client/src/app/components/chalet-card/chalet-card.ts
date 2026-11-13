@@ -5,11 +5,12 @@ import { Chalet } from '../../models/chalet.model';
 import { ChaletService } from '../../services/chalet.service';
 import { GeolocationService } from '../../services/geolocation.service';
 import { ComparisonService } from '../../services/comparison.service';
+import { AvatarFallbackDirective, SafeAvatarPipe } from '../../utils/avatar.util';
 
 @Component({
   selector: 'app-chalet-card',
   standalone: true,
-  imports: [RouterLink, CommonModule],
+  imports: [RouterLink, CommonModule, SafeAvatarPipe, AvatarFallbackDirective],
   templateUrl: './chalet-card.html',
   styleUrl: './chalet-card.css'
 })

@@ -11,6 +11,16 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Chalet',
     required: true,
   },
+  bookingType: {
+    type: String,
+    enum: ['reserva', 'cita'],
+    default: 'reserva',
+  },
+  visitTime: {
+    type: String,
+    default: '',
+    trim: true,
+  },
   guestName: {
     type: String,
     required: [true, 'El nombre del huésped es obligatorio'],
@@ -43,11 +53,12 @@ const bookingSchema = new mongoose.Schema({
   nights: {
     type: Number,
     required: true,
-    min: 1,
+    min: 0,
   },
   totalPriceGTQ: {
     type: Number,
     required: true,
+    min: 0,
   },
   notes: {
     type: String,
@@ -63,6 +74,6 @@ const bookingSchema = new mongoose.Schema({
 });
 
 bookingSchema.index({ chalet: 1, status: 1, checkIn: 1, checkOut: 1 });
-bookingSchema.index({ guest: 1, checkIn: 1 });
+bookingSchema.index({ guest: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

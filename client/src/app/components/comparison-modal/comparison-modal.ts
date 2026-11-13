@@ -5,11 +5,12 @@ import { ComparisonService } from '../../services/comparison.service';
 import { ChaletService } from '../../services/chalet.service';
 import { GeolocationService } from '../../services/geolocation.service';
 import { Chalet } from '../../models/chalet.model';
+import { AvatarFallbackDirective, SafeAvatarPipe } from '../../utils/avatar.util';
 
 @Component({
   selector: 'app-comparison-modal',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, SafeAvatarPipe, AvatarFallbackDirective],
   templateUrl: './comparison-modal.html',
   styleUrl: './comparison-modal.css'
 })
