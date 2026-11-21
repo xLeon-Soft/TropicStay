@@ -237,6 +237,14 @@
                       (click)="changeStatus(booking, 'cancelada')">
                       <i class="fa-solid fa-xmark"></i> Cancelar
                     </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-delete-booking"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="deleteBooking(booking)">
+                      <i class="fa-solid fa-trash-can"></i> Eliminar solicitud
+                    </button>
                   }
                 </div>
               } @else {
@@ -277,6 +285,14 @@
                       [disabled]="updatingBookingId === booking._id"
                       (click)="changeStatus(booking, 'cancelada')">
                       <i class="fa-solid fa-xmark"></i> Rechazar / Cancelar
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn-delete-booking"
+                      [disabled]="updatingBookingId === booking._id"
+                      (click)="deleteBooking(booking)">
+                      <i class="fa-solid fa-trash-can"></i> Eliminar solicitud
                     </button>
                   }
                 </div>

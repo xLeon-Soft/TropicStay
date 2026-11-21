@@ -44,6 +44,7 @@ export class RealtimeService implements OnDestroy {
   readonly messageEvents$ = new Subject<ChatMessage>();
   readonly readEvents$ = new Subject<{ partnerId: string }>();
   readonly bookingEvents$ = new Subject<{ type: 'created' | 'updated'; booking: BookingItem }>();
+  readonly bookingDeleted$ = new Subject<{ bookingId: string }>();
   readonly chaletEvents$ = new Subject<ChaletRealtimeEvent>();
 
   constructor() {
@@ -111,10 +112,26 @@ export class RealtimeService implements OnDestroy {
       if (!token) {
         mode = 'public';
       } else {
-        streamUrl = `${environment.apiBaseUrl}/events/stream?token=${encodeURIComponent(token)}`;
+        void this.openAuthenticatedStream(token);
+        return;
       }
     }
 
+    this.openEventSource(streamUrl, mode);
+  }
+
+  private async openAuthenticatedStream(token: string): Promise<void> {
+    const expectedUserId = this.activeUserId;
+    const ticket = await this.auth.createStreamTicket?.();
+    if (this.activeUserId !== expectedUserId) return;
+
+    const streamUrl = ticket
+      ? `${environment.apiBaseUrl}/events/stream?ticket=${encodeURIComponent(ticket)}`
+      : `${environment.apiBaseUrl}/events/stream?token=${encodeURIComponent(token)}`;
+    this.openEventSource(streamUrl, 'auth');
+  }
+
+  private openEventSource(streamUrl: string, mode: 'auth' | 'public'): void {
     this.streamMode = mode;
     const source = new EventSource(streamUrl);
     this.eventSource = source;
@@ -230,6 +247,21 @@ export class RealtimeService implements OnDestroy {
                 ? { userId: booking.chalet.host._id, ...(booking.chalet._id ? { chaletId: booking.chalet._id } : {}) }
                 : { tab: 'guest' },
             });
+          }
+        } catch {
+          // ignore
+        }
+      });
+    });
+
+    source.addEventListener('booking:deleted', (event: MessageEvent) => {
+      this.zone.run(() => {
+        try {
+          const payload = JSON.parse(event.data || '{}');
+          const bookingId = payload?.bookingId ? String(payload.bookingId) : '';
+          if (bookingId) {
+            this.bookingDeleted$.next({ bookingId });
+            this.refreshCounts();
           }
         } catch {
           // ignore

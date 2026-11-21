@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "b19b3be3-63b0-4fcf-a6c3-0bfe075eadc9",
     "name": "TropicStay API - Colección General",
-    "description": "Colección general unificada y ordenada de TropicStay.\n\nLas carpetas 1 a 7 están diseñadas para ejecutarse en orden (individualmente o con Postman Collection Runner) probando toda la API contra MongoDB con tokens automáticos de Anfitrión y Huésped.\nLa carpeta 8 reúne endpoints interactivos o manuales (Google OAuth, subida de archivos y streams SSE).",
+    "description": "Colección general unificada y ordenada de TropicStay.\n\nLas carpetas 1 a 7 (pasos 01 a 41) están diseñadas para ejecutarse en orden (individualmente o con Postman Collection Runner) probando toda la API contra MongoDB con tokens automáticos de Anfitrión y Huésped.\nLa carpeta 8 reúne flujos interactivos o manuales: Recuperación de cuenta por código OTP al correo real (3 pasos), Google OAuth, subida de imágenes y streams SSE.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,9 +16,13 @@
     { "key": "chaletId", "value": "6aad52b6a1c64f1253434d5f" },
     { "key": "appointmentId", "value": "" },
     { "key": "bookingId", "value": "" },
+    { "key": "streamTicket", "value": "" },
+    { "key": "resetCode", "value": "" },
     { "key": "hostEmail", "value": "postman.host@tropicstay.test" },
     { "key": "guestEmail", "value": "postman.guest@tropicstay.test" },
+    { "key": "recoveryEmail", "value": "xleon04gd@gmail.com" },
     { "key": "password", "value": "TropicStay2026!" },
+    { "key": "newPassword", "value": "TropicStay2026!" },
     { "key": "futureVisitDate", "value": "2027-06-12" },
     { "key": "futureCheckIn", "value": "2027-06-15" },
     { "key": "futureCheckOut", "value": "2027-06-18" }
@@ -283,6 +287,31 @@
           "request": {
             "method": "GET",
             "url": "{{baseUrl}}/auth/avatar/{{ownerId}}"
+          }
+        },
+        {
+          "name": "10 - Emitir Ticket Efímero para Tiempo Real (SSE)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Ticket SSE de un solo uso emitido correctamente', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.success).to.eql(true);",
+                  "  pm.expect(body.ticket).to.be.a('string');",
+                  "});",
+                  "if (body.ticket) { pm.collectionVariables.set('streamTicket', body.ticket); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/stream-ticket"
           }
         }
       ]
@@ -684,6 +713,28 @@
             },
             "url": "{{baseUrl}}/bookings/{{bookingId}}/status"
           }
+        },
+        {
+          "name": "32b - Eliminar Solicitud Cancelada del Historial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Solicitud cancelada eliminada del historial (200)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{hostToken}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": "{{baseUrl}}/bookings/{{bookingId}}"
+          }
         }
       ]
     },
@@ -803,8 +854,90 @@
       ]
     },
     {
-      "name": "8. Uso Manual (Google OAuth, Archivos y Streams SSE)",
+      "name": "8. Uso Manual (Recuperación OTP por Correo, Google OAuth, Archivos y SSE)",
       "item": [
+        {
+          "name": "Recuperación Paso 1 - Solicitar Código de 6 Dígitos al Correo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Solicitud de código procesada (200)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(body.success).to.eql(true);",
+                  "});",
+                  "if (body.devPreviewCode) { pm.collectionVariables.set('resetCode', body.devPreviewCode); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{recoveryEmail}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "Envía un código OTP de 6 dígitos al correo especificado (via Gmail SMTP si está configurado en server/.env). Coloca el código recibido en la variable `resetCode` o en el body del Paso 2."
+          }
+        },
+        {
+          "name": "Recuperación Paso 2 - Verificar Código OTP (Sin volver a expirar después)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Código OTP verificado correctamente (200)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{recoveryEmail}}\",\n  \"code\": \"{{resetCode}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-reset-code",
+            "description": "Valida el código de 6 dígitos antes de que expire y marca la verificación para permitir definir la nueva contraseña sin expirar en el Paso 3."
+          }
+        },
+        {
+          "name": "Recuperación Paso 3 - Cambiar Contraseña con Código Verificado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Contraseña actualizada correctamente (200)', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().success).to.eql(true);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{recoveryEmail}}\",\n  \"code\": \"{{resetCode}}\",\n  \"newPassword\": \"{{newPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password"
+          }
+        },
         {
           "name": "Google Sign-In (Pegar ID Token de Google)",
           "request": {
@@ -830,10 +963,11 @@
           }
         },
         {
-          "name": "SSE Stream Autenticado (Conexión en Vivo)",
+          "name": "SSE Stream Autenticado (Ticket Efímero o Token)",
           "request": {
             "method": "GET",
-            "url": "{{baseUrl}}/events/stream?token={{hostToken}}"
+            "url": "{{baseUrl}}/events/stream?ticket={{streamTicket}}",
+            "description": "Usa el ticket de un solo uso generado en '10 - Emitir Ticket Efímero para Tiempo Real (SSE)', o reemplaza por ?token={{hostToken}}."
           }
         },
         {

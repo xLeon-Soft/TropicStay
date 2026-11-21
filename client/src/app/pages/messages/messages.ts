@@ -69,6 +69,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   readonly isSending = signal(false);
   readonly error = signal('');
   readonly mobileView = signal<'list' | 'thread'>('list');
+  readonly showQuickReplies = signal(false);
+  readonly showChaletBanner = signal(true);
+  readonly isSidebarCollapsed = signal(false);
 
   constructor() {
     this.chatWidget.enterMessagesPage(this.chatWidget.activePartnerId());
@@ -246,6 +249,18 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.mobileView.set('list');
   }
 
+  toggleSidebar(): void {
+    this.isSidebarCollapsed.update((open) => !open);
+  }
+
+  toggleChaletBanner(): void {
+    this.showChaletBanner.update((open) => !open);
+  }
+
+  toggleQuickReplies(): void {
+    this.showQuickReplies.update((open) => !open);
+  }
+
   useQuickMessage(kind: 'visit' | 'payment' | 'arrival'): void {
     const partner = this.selectedPartner();
     if (!partner) return;
@@ -261,6 +276,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
     } else {
       this.draft.set(`Hola ${partner.name}, ¿qué horario de entrada y salida manejan en "${chaletTitle}"?`);
     }
+    this.showQuickReplies.set(false);
   }
 
   onComposerKeydown(event: KeyboardEvent): void {

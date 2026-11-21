@@ -20,6 +20,27 @@ describe('LoginComponent (Ver contraseña, Medidor de Seguridad y Rol Cliente)',
       registeredPayload = payload;
       return { success: true };
     },
+    requestPasswordReset: async (email: string) => ({
+      success: true,
+      emailSent: false,
+      devPreviewCode: '654321',
+      message: `Código generado para ${email}`,
+    }),
+    verifyResetCode: async (_email: string, code: string) => {
+      if (code !== '654321') {
+        return { success: false, error: 'Código incorrecto' };
+      }
+      return { success: true, message: 'Código verificado.' };
+    },
+    resetPasswordWithCode: async (_email: string, code: string, _newPassword: string) => {
+      if (code !== '654321') {
+        return { success: false, error: 'Código incorrecto' };
+      }
+      return {
+        success: true,
+        message: '¡Contraseña actualizada correctamente! Ya puedes iniciar sesión.',
+      };
+    },
     updateProfile: () => of({ success: true, message: 'ok', user: {} }),
   };
 
@@ -81,6 +102,61 @@ describe('LoginComponent (Ver contraseña, Medidor de Seguridad y Rol Cliente)',
 
     await component.onEmailSubmit();
     expect(registeredPayload?.role).toBe('guest');
+  });
+
+  it('permite solicitar un código por correo, validar nueva contraseña y recuperar la cuenta', async () => {
+    const el: HTMLElement = fixture.nativeElement;
+    const forgotBtn = el.querySelector('.btn-forgot-password') as HTMLButtonElement;
+    expect(forgotBtn).toBeTruthy();
+
+    forgotBtn.click();
+    fixture.detectChanges();
+    expect(component.authTab()).toBe('recover');
+    expect(component.recoverStep()).toBe('request');
+
+    component.email = 'alexander@tropicstay.gt';
+    await component.onRequestRecoveryCode();
+    fixture.detectChanges();
+
+    expect(component.recoverStep()).toBe('code');
+    expect(component.recoverStepNumber()).toBe(2);
+    expect(component.devPreviewCode()).toBe('654321');
+    expect(el.textContent).toContain('654321');
+
+    component.resetCode = '654321';
+    await component.onVerifyRecoveryCode();
+    fixture.detectChanges();
+    expect(component.recoverStep()).toBe('password');
+    expect(component.recoverStepNumber()).toBe(3);
+
+    component.onNewPasswordInput('NuevaClave#2026');
+    component.onConfirmPasswordInput('Otra');
+    fixture.detectChanges();
+    expect(component.passwordStrength().label).toBe('Muy segura');
+    expect(component.confirmPasswordStrength().label).toBe('Muy débil');
+    expect(component.passwordsMatch()).toBe(false);
+    expect(el.querySelector('.password-match-pill.is-mismatch')).not.toBeNull();
+
+    const confirmInput = el.querySelector('#confirmPassword') as HTMLInputElement;
+    const confirmToggle = el.querySelector('.btn-toggle-confirm-password') as HTMLButtonElement;
+    expect(confirmToggle).toBeTruthy();
+    expect(confirmInput.type).toBe('password');
+    confirmToggle.click();
+    fixture.detectChanges();
+    expect(confirmInput.type).toBe('text');
+
+    component.onConfirmPasswordInput('NuevaClave#2026');
+    fixture.detectChanges();
+    expect(component.confirmPasswordStrength().label).toBe('Muy segura');
+    expect(component.passwordsMatch()).toBe(true);
+    expect(el.querySelector('.password-match-pill.is-match')).not.toBeNull();
+
+    await component.onResetPasswordSubmit();
+    fixture.detectChanges();
+
+    expect(component.authTab()).toBe('login');
+    expect(component.successMessage()).toContain('Contraseña actualizada');
+    expect(el.querySelector('.login-success')).not.toBeNull();
   });
 });
 

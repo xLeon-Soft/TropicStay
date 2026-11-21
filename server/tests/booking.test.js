@@ -520,5 +520,77 @@ describe('Módulo de Reservaciones - Pruebas Unitarias del Controlador (bookingC
       realtimeService.emitToUser = originalEmit;
     }
   });
+
+  it('deleteBooking() rechaza eliminar solicitudes que no estén canceladas/rechazadas (400)', async () => {
+    const hostId = new mongoose.Types.ObjectId();
+    const guestId = new mongoose.Types.ObjectId();
+    const bookingId = new mongoose.Types.ObjectId();
+
+    Booking.findById = () => ({
+      populate() {
+        return {
+          populate: async () => ({
+            _id: bookingId,
+            status: 'pendiente',
+            guest: { _id: guestId, email: 'guest@tropicstay.gt' },
+            chalet: { _id: new mongoose.Types.ObjectId(), title: 'Chalet Lago', host: { _id: hostId } },
+          }),
+        };
+      },
+    });
+
+    const req = { params: { id: bookingId.toString() }, user: { _id: hostId, role: 'host' } };
+    const res = createMockRes();
+
+    await bookingController.deleteBooking(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.match(res.body.message, /rechazadas o canceladas/i);
+  });
+
+  it('deleteBooking() elimina una solicitud cancelada y emite booking:deleted en tiempo real', async () => {
+    const hostId = new mongoose.Types.ObjectId();
+    const guestId = new mongoose.Types.ObjectId();
+    const bookingId = new mongoose.Types.ObjectId();
+    const originalFindByIdAndDelete = Booking.findByIdAndDelete;
+    const originalEmit = realtimeService.emitToUser;
+    const emittedEvents = [];
+    let deletedId = null;
+
+    try {
+      Booking.findById = () => ({
+        populate() {
+          return {
+            populate: async () => ({
+              _id: bookingId,
+              status: 'cancelada',
+              guest: { _id: guestId, email: 'guest@tropicstay.gt' },
+              chalet: { _id: new mongoose.Types.ObjectId(), title: 'Chalet Lago', host: { _id: hostId } },
+            }),
+          };
+        },
+      });
+      Booking.findByIdAndDelete = async (id) => {
+        deletedId = String(id);
+        return { _id: id };
+      };
+      realtimeService.emitToUser = (userId, event, data) => {
+        emittedEvents.push({ userId: String(userId), event, data });
+        return 1;
+      };
+
+      const req = { params: { id: bookingId.toString() }, user: { _id: hostId, role: 'host' } };
+      const res = createMockRes();
+
+      await bookingController.deleteBooking(req, res);
+      assert.equal(res.statusCode, 200);
+      assert.equal(deletedId, bookingId.toString());
+      assert.equal(res.body.data._id, bookingId.toString());
+      assert.ok(emittedEvents.some((e) => e.userId === String(hostId) && e.event === 'booking:deleted'));
+      assert.ok(emittedEvents.some((e) => e.userId === String(guestId) && e.event === 'booking:deleted'));
+    } finally {
+      Booking.findByIdAndDelete = originalFindByIdAndDelete;
+      realtimeService.emitToUser = originalEmit;
+    }
+  });
 });
 

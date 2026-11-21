@@ -3,9 +3,14 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const { OAuth2Client } = require('google-auth-library');
 const User = require('../models/User');
+const emailService = require('../services/emailService');
+const { createStreamTicket } = require('../middleware/authMiddleware');
 
 const googleClient = new OAuth2Client();
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RESET_CODE_REGEX = /^\d{6}$/;
+const RESET_CODE_TTL_MINUTES = 1;
+const MAX_RESET_ATTEMPTS = 5;
 const AVATAR_CACHE_TTL_MS = 30 * 60 * 1000;
 const avatarCache = new Map();
 
@@ -71,6 +76,72 @@ function verifyPassword(password, storedHash) {
   const derivedKey = crypto.scryptSync(password, salt, 64);
   if (expectedKey.length !== derivedKey.length) return false;
   return crypto.timingSafeEqual(expectedKey, derivedKey);
+}
+
+function generateResetCode() {
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+function hashResetCode(userId, code) {
+  const pepper = process.env.JWT_SECRET || 'tropicstay-reset-pepper';
+  return crypto.createHash('sha256').update(`${String(userId)}:${String(code)}:${pepper}`).digest('hex');
+}
+
+function verifyResetCodeHash(userId, code, storedHash) {
+  if (!storedHash || !RESET_CODE_REGEX.test(String(code || ''))) return false;
+  const expected = Buffer.from(storedHash, 'hex');
+  const candidate = Buffer.from(hashResetCode(userId, code), 'hex');
+  if (expected.length !== candidate.length) return false;
+  return crypto.timingSafeEqual(expected, candidate);
+}
+
+function clearUserResetState(user) {
+  user.resetPasswordCodeHash = undefined;
+  user.resetPasswordExpiresAt = undefined;
+  user.resetPasswordAttempts = 0;
+  user.resetPasswordVerified = false;
+}
+
+async function validateUserResetCode(user, code, { allowVerified = false } = {}) {
+  const alreadyVerifiedInStep = Boolean(allowVerified && user?.resetPasswordVerified);
+
+  if (!user || !user.resetPasswordCodeHash || (!user.resetPasswordExpiresAt && !alreadyVerifiedInStep)) {
+    return { valid: false, status: 400, message: 'No hay un código de recuperación activo. Solicita uno nuevo.' };
+  }
+
+  if (
+    !alreadyVerifiedInStep &&
+    user.resetPasswordExpiresAt &&
+    new Date(user.resetPasswordExpiresAt).getTime() <= Date.now()
+  ) {
+    clearUserResetState(user);
+    await user.save();
+    return { valid: false, status: 400, message: 'El código expiró. Solicita un código nuevo.' };
+  }
+
+  if ((user.resetPasswordAttempts || 0) >= MAX_RESET_ATTEMPTS) {
+    clearUserResetState(user);
+    await user.save();
+    return { valid: false, status: 429, message: 'Superaste el límite de intentos. Solicita un código nuevo.' };
+  }
+
+  if (!verifyResetCodeHash(user._id, code, user.resetPasswordCodeHash)) {
+    const nextAttempts = (user.resetPasswordAttempts || 0) + 1;
+    user.resetPasswordAttempts = nextAttempts;
+    if (nextAttempts >= MAX_RESET_ATTEMPTS) {
+      clearUserResetState(user);
+      await user.save();
+      return { valid: false, status: 429, message: 'Código incorrecto. Se agotaron los intentos, solicita un código nuevo.' };
+    }
+    await user.save();
+    return {
+      valid: false,
+      status: 400,
+      message: `El código de 6 dígitos no es válido. Te quedan ${MAX_RESET_ATTEMPTS - nextAttempts} intento(s).`,
+    };
+  }
+
+  return { valid: true };
 }
 
 const register = async (req, res) => {
@@ -308,4 +379,165 @@ const getUserAvatar = async (req, res) => {
   }
 };
 
-module.exports = { googleLogin, register, login, getMe, updateProfile, getUserAvatar };
+// POST /api/auth/forgot-password { email }
+const forgotPassword = async (req, res) => {
+  try {
+    const cleanEmail = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (!EMAIL_REGEX.test(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Ingresa un correo electrónico válido.' });
+    }
+
+    const user = await User.findOne({ email: cleanEmail }).select(
+      '+resetPasswordCodeHash +resetPasswordExpiresAt +resetPasswordAttempts'
+    );
+
+    if (!user) {
+      return res.json({
+        success: true,
+        emailSent: true,
+        message: 'Si el correo está registrado en TropicStay, te enviamos un código de 6 dígitos para recuperar tu cuenta.',
+      });
+    }
+
+    const code = generateResetCode();
+    user.resetPasswordCodeHash = hashResetCode(user._id, code);
+    user.resetPasswordExpiresAt = new Date(Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000);
+    user.resetPasswordAttempts = 0;
+    user.resetPasswordVerified = false;
+    await user.save();
+
+    try {
+      const mailResult = await emailService.sendPasswordResetCode({
+        to: user.email,
+        name: user.name,
+        code,
+        expiresMinutes: RESET_CODE_TTL_MINUTES,
+      });
+
+      const response = {
+        success: true,
+        emailSent: mailResult.delivered,
+        message: mailResult.delivered
+          ? `Enviamos un código de 6 dígitos a ${user.email}. Revisa tu bandeja de entrada o spam.`
+          : 'Modo local sin SMTP configurado: usa el código de vista previa mostrado abajo o configura SMTP en server/.env para enviarlo por correo real.',
+      };
+
+      if (!mailResult.delivered && process.env.NODE_ENV !== 'production') {
+        response.devPreviewCode = code;
+      }
+
+      return res.json(response);
+    } catch (mailError) {
+      clearUserResetState(user);
+      await user.save();
+      console.error('Error enviando correo de recuperación:', mailError.message);
+      return res.status(502).json({
+        success: false,
+        message: 'No pudimos enviar el correo de recuperación en este momento. Verifica la configuración SMTP.',
+      });
+    }
+  } catch (error) {
+    console.error('Error en forgotPassword:', error.message);
+    return res.status(500).json({ success: false, message: 'Error al solicitar el código de recuperación.' });
+  }
+};
+
+// POST /api/auth/verify-reset-code { email, code }
+const verifyResetCode = async (req, res) => {
+  try {
+    const cleanEmail = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const cleanCode = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+
+    if (!EMAIL_REGEX.test(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Correo electrónico inválido.' });
+    }
+    if (!RESET_CODE_REGEX.test(cleanCode)) {
+      return res.status(400).json({ success: false, message: 'Ingresa el código numérico de 6 dígitos.' });
+    }
+
+    const user = await User.findOne({ email: cleanEmail }).select(
+      '+resetPasswordCodeHash +resetPasswordExpiresAt +resetPasswordAttempts +resetPasswordVerified'
+    );
+    const check = await validateUserResetCode(user, cleanCode);
+    if (!check.valid) {
+      return res.status(check.status).json({ success: false, message: check.message });
+    }
+
+    user.resetPasswordVerified = true;
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: 'Código verificado. Ahora define tu nueva contraseña.',
+    });
+  } catch (error) {
+    console.error('Error en verifyResetCode:', error.message);
+    return res.status(500).json({ success: false, message: 'No se pudo verificar el código.' });
+  }
+};
+
+// POST /api/auth/reset-password { email, code, newPassword }
+const resetPassword = async (req, res) => {
+  try {
+    const cleanEmail = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const cleanCode = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+    const cleanPassword = typeof req.body?.newPassword === 'string' ? req.body.newPassword : '';
+
+    if (!EMAIL_REGEX.test(cleanEmail)) {
+      return res.status(400).json({ success: false, message: 'Ingresa un correo electrónico válido.' });
+    }
+    if (!RESET_CODE_REGEX.test(cleanCode)) {
+      return res.status(400).json({ success: false, message: 'El código debe tener exactamente 6 dígitos.' });
+    }
+    if (cleanPassword.length < 6) {
+      return res.status(400).json({ success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+    }
+
+    const user = await User.findOne({ email: cleanEmail }).select(
+      '+passwordHash +resetPasswordCodeHash +resetPasswordExpiresAt +resetPasswordAttempts +resetPasswordVerified'
+    );
+    const check = await validateUserResetCode(user, cleanCode, { allowVerified: true });
+    if (!check.valid) {
+      return res.status(check.status).json({ success: false, message: check.message });
+    }
+
+    user.passwordHash = hashPassword(cleanPassword);
+    user.verified = true;
+    clearUserResetState(user);
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: '¡Contraseña actualizada correctamente! Ya puedes iniciar sesión y recuperar tu cuenta.',
+    });
+  } catch (error) {
+    console.error('Error en resetPassword:', error.message);
+    return res.status(500).json({ success: false, message: 'No se pudo cambiar la contraseña.' });
+  }
+};
+
+// POST /api/auth/stream-ticket
+const issueStreamTicket = (req, res) => {
+  const ticket = createStreamTicket(req.user._id);
+  return res.json({ success: true, ticket });
+};
+
+module.exports = {
+  googleLogin,
+  register,
+  login,
+  getMe,
+  updateProfile,
+  getUserAvatar,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword,
+  issueStreamTicket,
+  _helpers: {
+    hashPassword,
+    verifyPassword,
+    generateResetCode,
+    hashResetCode,
+    verifyResetCodeHash,
+  },
+};

@@ -67,6 +67,20 @@ export interface RegisterPayload {
   role?: 'guest' | 'host';
 }
 
+export interface PasswordRecoveryRequestResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+  emailSent?: boolean;
+  devPreviewCode?: string;
+}
+
+export interface PasswordResetResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   // OAuth client IDs are public by design. Never put the client secret in Angular.
@@ -174,6 +188,80 @@ export class AuthService {
         success: false,
         error: error?.error?.message || 'No se pudo completar el registro.',
       };
+    }
+  }
+
+  async requestPasswordReset(email: string): Promise<PasswordRecoveryRequestResult> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{
+          success: boolean;
+          message: string;
+          emailSent?: boolean;
+          devPreviewCode?: string;
+        }>(`${this.apiUrl}/forgot-password`, { email })
+      );
+      return {
+        success: Boolean(res.success),
+        message: res.message,
+        emailSent: res.emailSent,
+        devPreviewCode: res.devPreviewCode,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.error?.message || 'No se pudo enviar el código de recuperación.',
+      };
+    }
+  }
+
+  async verifyResetCode(email: string, code: string): Promise<PasswordResetResult> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/verify-reset-code`, {
+          email,
+          code,
+        })
+      );
+      return { success: Boolean(res.success), message: res.message };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.error?.message || 'El código ingresado no es válido o expiró.',
+      };
+    }
+  }
+
+  async resetPasswordWithCode(
+    email: string,
+    code: string,
+    newPassword: string
+  ): Promise<PasswordResetResult> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/reset-password`, {
+          email,
+          code,
+          newPassword,
+        })
+      );
+      return { success: Boolean(res.success), message: res.message };
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error?.error?.message || 'No se pudo cambiar la contraseña.',
+      };
+    }
+  }
+
+  async createStreamTicket(): Promise<string | null> {
+    try {
+      const res = await firstValueFrom(
+        this.http.post<{ success: boolean; ticket: string }>(`${this.apiUrl}/stream-ticket`, {})
+      );
+      return res?.success && res?.ticket ? res.ticket : null;
+    } catch {
+      return null;
     }
   }
 

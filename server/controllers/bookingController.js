@@ -442,6 +442,52 @@ exports.updateBookingStatus = async (req, res) => {
   }
 };
 
+// DELETE /api/bookings/:id (solo para solicitudes canceladas/rechazadas)
+exports.deleteBooking = async (req, res) => {
+  try {
+    if (!validId(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'El identificador no es válido.' });
+    }
+
+    const booking = await bookingWithRelations(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ success: false, message: 'Solicitud no encontrada.' });
+    }
+
+    const owner = isBookingOwner(booking, req.user);
+    const host = isChaletOwner(booking, req.user) || req.user.role === 'admin';
+    if (!owner && !host) {
+      return res.status(403).json({ success: false, message: 'No puedes eliminar esta solicitud.' });
+    }
+
+    if (booking.status !== 'cancelada') {
+      return res.status(400).json({
+        success: false,
+        message: 'Solo puedes eliminar solicitudes que ya fueron rechazadas o canceladas.',
+      });
+    }
+
+    await Booking.findByIdAndDelete(booking._id);
+
+    const guestId = booking.guest?._id || booking.guest;
+    const hostId = booking.chalet?.host?._id || booking.chalet?.host;
+    if (guestId) realtimeService.emitToUser(guestId, 'booking:deleted', { bookingId: String(booking._id) });
+    if (hostId) realtimeService.emitToUser(hostId, 'booking:deleted', { bookingId: String(booking._id) });
+
+    return res.json({
+      success: true,
+      message: 'Solicitud eliminada del historial.',
+      data: { _id: String(booking._id) },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'No se pudo eliminar la solicitud.',
+      error: error.message,
+    });
+  }
+};
+
 // Export pure helpers for unit testing
 exports._helpers = {
   validId,

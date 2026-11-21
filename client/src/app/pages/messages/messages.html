@@ -12,10 +12,10 @@
       <p>Comunícate de forma segura únicamente dentro de la plataforma una vez aceptada la cita con el propietario.</p>
     </div>
     <div class="heading-actions">
-      <a routerLink="/bookings" class="btn-outline">
+      <a routerLink="/bookings" class="btn-outline btn-sm">
         <i class="fa-solid fa-calendar-check"></i> Citas y Reservas
       </a>
-      <a routerLink="/explore" class="btn-primary">
+      <a routerLink="/explore" class="btn-primary btn-sm">
         <i class="fa-solid fa-compass"></i> Explorar Chalets
       </a>
     </div>
@@ -25,7 +25,10 @@
     <p class="messages-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error() }}</p>
   }
 
-  <section class="messages-shell glass-panel" [attr.data-mobile-view]="mobileView()">
+  <section
+    class="messages-shell glass-panel"
+    [class.sidebar-collapsed]="isSidebarCollapsed()"
+    [attr.data-mobile-view]="mobileView()">
     <!-- Left Conversations Sidebar -->
     <aside class="conversation-list" aria-label="Conversaciones habilitadas">
       <div class="conversation-list-header">
@@ -122,58 +125,87 @@
               aria-label="Volver a la lista de chats">
               <i class="fa-solid fa-chevron-left"></i>
             </button>
+            <button
+              type="button"
+              class="desktop-sidebar-toggle"
+              (click)="toggleSidebar()"
+              [title]="isSidebarCollapsed() ? 'Mostrar lista de chats' : 'Ampliar área del chat'"
+              aria-label="Mostrar u ocultar lista de chats">
+              <i class="fa-solid" [ngClass]="isSidebarCollapsed() ? 'fa-angles-right' : 'fa-angles-left'"></i>
+            </button>
             <img
               [src]="partner.avatar | safeAvatar:partner._id:partner.name"
               [alt]="partner.name"
               appAvatarFallback>
-            <div>
+            <div class="conv-partner-meta">
               <h2>{{ partner.name }}</h2>
               <span>
-                <i class="fa-solid fa-circle-check"></i> Chat oficial TropicStay
+                <i class="fa-solid fa-circle-check"></i> Chat oficial
                 @if (partner.responseTime) {
-                  • Responde en {{ partner.responseTime }}
+                  • {{ partner.responseTime }}
                 }
               </span>
             </div>
           </div>
 
           <div class="conv-header-actions">
+            @if (selectedChalet() && !showChaletBanner()) {
+              <button
+                type="button"
+                class="btn-outline btn-xs"
+                (click)="toggleChaletBanner()"
+                title="Mostrar chalet de la cita">
+                <i class="fa-solid fa-house"></i> <span class="btn-label-hide-sm">Chalet</span>
+              </button>
+            }
             <button
               type="button"
               class="btn-outline btn-xs"
               (click)="minimizeToFloatingDock()"
               title="Cambiar a ventana pequeña flotante">
-              <i class="fa-solid fa-down-left-and-up-right-to-center"></i> Modo mini
+              <i class="fa-solid fa-down-left-and-up-right-to-center"></i> <span class="btn-label-hide-sm">Modo mini</span>
             </button>
-            <a [routerLink]="['/host', partner._id]" class="btn-outline btn-xs">
-              <i class="fa-regular fa-user"></i> Ver Perfil
+            <a [routerLink]="['/host', partner._id]" class="btn-outline btn-xs" title="Ver perfil">
+              <i class="fa-regular fa-user"></i> <span class="btn-label-hide-sm">Perfil</span>
             </a>
           </div>
         </header>
 
-        <!-- Chalet Context Banner -->
+        <!-- Compact Collapsible Chalet Context Banner -->
         @if (selectedChalet(); as chalet) {
-          <div class="conv-chalet-banner">
-            <img [src]="chalet.thumbnail" [alt]="chalet.title" />
-            <div class="conv-chalet-info">
-              <div class="conv-chalet-badges">
-                <span class="conv-chalet-eyebrow">Chalet de la cita</span>
-                @if (chatEnabled()) {
-                  <span class="conv-appointment-pill"><i class="fa-solid fa-check"></i> Cita aceptada</span>
-                } @else {
-                  <span class="conv-appointment-pill is-locked"><i class="fa-solid fa-lock"></i> Cita pendiente</span>
-                }
+          @if (showChaletBanner()) {
+            <div class="conv-chalet-banner">
+              <img [src]="chalet.thumbnail" [alt]="chalet.title" />
+              <div class="conv-chalet-info">
+                <div class="conv-chalet-badges">
+                  <span class="conv-chalet-eyebrow">Chalet</span>
+                  @if (chatEnabled()) {
+                    <span class="conv-appointment-pill"><i class="fa-solid fa-check"></i> Cita aceptada</span>
+                  } @else {
+                    <span class="conv-appointment-pill is-locked"><i class="fa-solid fa-lock"></i> Cita pendiente</span>
+                  }
+                </div>
+                <strong>{{ chalet.title }}</strong>
+                <small>
+                  <i class="fa-solid fa-location-dot"></i> {{ chalet.municipality }}, {{ chalet.department }}
+                  • <b>{{ chaletService.formatPrice(chalet.pricePerNight, chalet.priceUSD) }}</b> / noche
+                </small>
               </div>
-              <strong>{{ chalet.title }}</strong>
-              <small>
-                <i class="fa-solid fa-location-dot"></i> {{ chalet.municipality }}, {{ chalet.department }}
-                • <b>{{ chaletService.formatPrice(chalet.pricePerNight, chalet.priceUSD) }}</b> / noche
-              </small>
+              <div class="conv-chalet-actions">
+                <a [routerLink]="['/chalet', chalet._id]" class="btn-primary btn-xs">
+                  <i class="fa-solid fa-calendar-check"></i> Ver Chalet
+                </a>
+                <button
+                  type="button"
+                  class="banner-collapse-btn"
+                  (click)="toggleChaletBanner()"
+                  title="Ocultar tarjeta para dar más espacio al chat"
+                  aria-label="Ocultar tarjeta de chalet">
+                  <i class="fa-solid fa-chevron-up"></i>
+                </button>
+              </div>
             </div>
-            <a [routerLink]="['/chalet', chalet._id]" class="btn-primary btn-xs">
-              <i class="fa-solid fa-calendar-check"></i> Ver Chalet y Reservar
-            </a>
-          </div>
+          }
         }
 
         <div #threadContainer class="messages-thread" aria-live="polite">
@@ -226,18 +258,38 @@
         </div>
 
         @if (chatEnabled()) {
-          <div class="quick-replies-strip">
-            <button type="button" (click)="useQuickMessage('visit')">Confirmar visita</button>
-            <button type="button" (click)="useQuickMessage('payment')">Consultar reserva y pago</button>
-            <button type="button" (click)="useQuickMessage('arrival')">Horarios de llegada</button>
-          </div>
+          @if (showQuickReplies()) {
+            <div class="quick-replies-strip">
+              <button type="button" (click)="useQuickMessage('visit')">Confirmar visita</button>
+              <button type="button" (click)="useQuickMessage('payment')">Consultar reserva y pago</button>
+              <button type="button" (click)="useQuickMessage('arrival')">Horarios de llegada</button>
+              <button
+                type="button"
+                class="quick-close-btn"
+                (click)="toggleQuickReplies()"
+                title="Ocultar mensajes rápidos"
+                aria-label="Ocultar mensajes rápidos">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          }
 
           <form class="message-composer" (ngSubmit)="send()">
+            <button
+              type="button"
+              class="composer-quick-btn"
+              [class.is-open]="showQuickReplies()"
+              (click)="toggleQuickReplies()"
+              title="Mostrar u ocultar mensajes rápidos"
+              aria-label="Mensajes rápidos">
+              <i class="fa-solid fa-bolt"></i>
+              <span class="quick-btn-label">Rápidos</span>
+            </button>
             <textarea
               [ngModel]="draft()"
               (ngModelChange)="draft.set($event)"
               name="draft"
-              rows="2"
+              rows="1"
               maxlength="2000"
               placeholder="Escribe un mensaje... (Enter para enviar)"
               (keydown)="onComposerKeydown($event)"
@@ -245,7 +297,8 @@
               required>
             </textarea>
             <button type="submit" class="btn-primary composer-send-btn" [disabled]="isSending() || !draft().trim()">
-              <i class="fa-solid fa-paper-plane"></i> {{ isSending() ? 'Enviando...' : 'Enviar' }}
+              <i class="fa-solid fa-paper-plane"></i>
+              <span>{{ isSending() ? 'Enviando...' : 'Enviar' }}</span>
             </button>
           </form>
         }

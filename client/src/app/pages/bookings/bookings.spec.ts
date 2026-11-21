@@ -30,6 +30,10 @@ describe('BookingsComponent (Panel de Reservaciones de Huésped y Anfitrión)', 
       const updated: BookingItem = { ...target, status };
       return of({ success: true, message: 'Actualizado', data: updated });
     },
+    deleteBooking: (id: string) => {
+      mockBookings = mockBookings.filter((b) => b._id !== id);
+      return of({ success: true, message: 'Eliminada', data: { _id: id } });
+    },
   };
 
   const chaletServiceMock = {
@@ -42,9 +46,11 @@ describe('BookingsComponent (Panel de Reservaciones de Huésped y Anfitrión)', 
   };
 
   const bookingEvents$ = new Subject<{ type: 'created' | 'updated'; booking: BookingItem }>();
+  const bookingDeleted$ = new Subject<{ bookingId: string }>();
   const realtimeServiceMock = {
     isConnected: signal(true),
     bookingEvents$,
+    bookingDeleted$,
     messageEvents$: new Subject(),
     refreshCounts: () => {},
   };
@@ -245,6 +251,35 @@ describe('BookingsComponent (Panel de Reservaciones de Huésped y Anfitrión)', 
     await Promise.resolve();
 
     expect(component.guestBookings[0].status).toBe('cancelada');
+  });
+
+  it('permite eliminar una solicitud cancelada/rechazada del historial y desaparece de la lista', async () => {
+    const uiDialog = TestBed.inject(UiDialogService);
+    component.activeTab = 'host';
+    component.allBookings = component.allBookings.map((b) =>
+      b._id === 'b-host-1' ? { ...b, status: 'cancelada' as const } : b
+    );
+    fixture.detectChanges();
+
+    const deleteBtn = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button')
+    ).find((btn) => btn.textContent?.includes('Eliminar solicitud'));
+    expect(deleteBtn).toBeTruthy();
+
+    deleteBtn!.click();
+    expect(uiDialog.activeConfirm()).not.toBeNull();
+
+    uiDialog.resolveConfirm(true);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(component.hostBookings.some((b) => b._id === 'b-host-1')).toBe(false);
+  });
+
+  it('elimina en tiempo real una solicitud cuando llega el evento booking:deleted', () => {
+    expect(component.hostBookings.some((b) => b._id === 'b-host-1')).toBe(true);
+    bookingDeleted$.next({ bookingId: 'b-host-1' });
+    expect(component.hostBookings.some((b) => b._id === 'b-host-1')).toBe(false);
   });
 });
 

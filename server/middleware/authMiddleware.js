@@ -1,5 +1,34 @@
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+
+const STREAM_TICKET_TTL_MS = 60 * 1000;
+const streamTickets = new Map();
+
+function createStreamTicket(userId) {
+  const ticket = crypto.randomBytes(24).toString('hex');
+  streamTickets.set(ticket, {
+    userId: String(userId),
+    expiresAt: Date.now() + STREAM_TICKET_TTL_MS,
+  });
+
+  if (streamTickets.size > 500) {
+    const now = Date.now();
+    for (const [key, entry] of streamTickets.entries()) {
+      if (entry.expiresAt <= now) streamTickets.delete(key);
+    }
+  }
+  return ticket;
+}
+
+function consumeStreamTicket(ticket) {
+  if (!ticket) return null;
+  const entry = streamTickets.get(ticket);
+  if (!entry) return null;
+  streamTickets.delete(ticket);
+  if (entry.expiresAt <= Date.now()) return null;
+  return entry.userId;
+}
 
 async function resolveUserFromToken(token) {
   if (!token || !process.env.JWT_SECRET) return null;
@@ -28,18 +57,32 @@ const protect = async (req, res, next) => {
   }
 };
 
-/** Validates JWT from Authorization header or query param (for SSE EventSource). */
+/** Validates JWT from Authorization header, one-time SSE ticket, or legacy query token. */
 const protectStream = async (req, res, next) => {
   const header = req.headers.authorization || '';
   const bearerToken = header.startsWith('Bearer ') ? header.slice(7) : null;
+  const queryTicket = typeof req.query.ticket === 'string' ? req.query.ticket : null;
   const queryToken = typeof req.query.token === 'string' ? req.query.token : null;
-  const token = bearerToken || queryToken;
-
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Se requiere iniciar sesión para eventos en tiempo real.' });
-  }
 
   try {
+    if (queryTicket) {
+      const ticketUserId = consumeStreamTicket(queryTicket);
+      if (!ticketUserId) {
+        return res.status(401).json({ success: false, message: 'Ticket de tiempo real inválido o expirado.' });
+      }
+      const user = await User.findById(ticketUserId);
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'La sesión ya no es válida.' });
+      }
+      req.user = user;
+      return next();
+    }
+
+    const token = bearerToken || queryToken;
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Se requiere iniciar sesión para eventos en tiempo real.' });
+    }
+
     const user = await resolveUserFromToken(token);
     if (!user) {
       return res.status(401).json({ success: false, message: 'La sesión ya no es válida.' });
@@ -58,4 +101,4 @@ const isAdmin = (req, res, next) => {
   return next();
 };
 
-module.exports = { protect, protectStream, isAdmin };
+module.exports = { protect, protectStream, isAdmin, createStreamTicket };

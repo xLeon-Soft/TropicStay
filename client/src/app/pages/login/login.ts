@@ -22,18 +22,32 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
   readonly loading = signal(true);
   readonly signingIn = signal(false);
   readonly error = signal('');
-  readonly authTab = signal<'login' | 'register'>('login');
+  readonly successMessage = signal('');
+  readonly authTab = signal<'login' | 'register' | 'recover'>('login');
+  readonly recoverStep = signal<'request' | 'code' | 'password'>('request');
+  readonly recoverStepNumber = computed(() => {
+    const step = this.recoverStep();
+    return step === 'request' ? 1 : step === 'code' ? 2 : 3;
+  });
+  readonly recoveryInfo = signal('');
+  readonly devPreviewCode = signal('');
+  readonly resendCooldown = signal(0);
   readonly showPassword = signal(false);
+  readonly showConfirmPassword = signal(false);
   readonly passwordSignal = signal('');
+  readonly confirmPasswordSignal = signal('');
+  private cooldownTimer?: ReturnType<typeof setInterval>;
 
   // Email / Password Form Model
   name = '';
   email = '';
   password = '';
   phone = '+502 ';
+  resetCode = '';
+  newPassword = '';
+  confirmPassword = '';
 
-  readonly passwordChecks = computed(() => {
-    const pwd = this.passwordSignal();
+  private evaluatePasswordChecks(pwd: string) {
     return {
       minLength: pwd.length >= 6,
       goodLength: pwd.length >= 8,
@@ -42,14 +56,13 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
       number: /\d/.test(pwd),
       special: /[^A-Za-z0-9]/.test(pwd),
     };
-  });
+  }
 
-  readonly passwordStrength = computed(() => {
-    const pwd = this.passwordSignal();
+  private evaluatePasswordStrength(pwd: string) {
     if (!pwd) {
       return { score: 0, percent: 0, label: 'Ingresa una contraseña', tone: 'empty' };
     }
-    const c = this.passwordChecks();
+    const c = this.evaluatePasswordChecks(pwd);
     let score = 0;
     if (c.minLength) score += 1;
     if (c.goodLength) score += 1;
@@ -70,15 +83,84 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
       return { score, percent: 84, label: 'Fuerte', tone: 'strong' };
     }
     return { score, percent: 100, label: 'Muy segura', tone: 'excellent' };
-  });
+  }
+
+  readonly passwordChecks = computed(() => this.evaluatePasswordChecks(this.passwordSignal()));
+  readonly passwordStrength = computed(() => this.evaluatePasswordStrength(this.passwordSignal()));
+  readonly confirmPasswordChecks = computed(() => this.evaluatePasswordChecks(this.confirmPasswordSignal()));
+  readonly confirmPasswordStrength = computed(() => this.evaluatePasswordStrength(this.confirmPasswordSignal()));
+  readonly passwordsMatch = computed(
+    () => Boolean(this.passwordSignal()) && this.passwordSignal() === this.confirmPasswordSignal()
+  );
 
   onPasswordInput(value: string): void {
     this.password = value;
     this.passwordSignal.set(value || '');
   }
 
+  onNewPasswordInput(value: string): void {
+    this.newPassword = value;
+    this.passwordSignal.set(value || '');
+  }
+
+  onConfirmPasswordInput(value: string): void {
+    this.confirmPassword = value;
+    this.confirmPasswordSignal.set(value || '');
+  }
+
   togglePasswordVisibility(): void {
     this.showPassword.update((v) => !v);
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword.update((v) => !v);
+  }
+
+  switchAuthTab(tab: 'login' | 'register' | 'recover'): void {
+    this.authTab.set(tab);
+    this.error.set('');
+    this.successMessage.set('');
+    this.showPassword.set(false);
+    this.showConfirmPassword.set(false);
+    if (tab === 'recover') {
+      this.recoverStep.set('request');
+      this.recoveryInfo.set('');
+      this.devPreviewCode.set('');
+      this.resetCode = '';
+      this.newPassword = '';
+      this.confirmPassword = '';
+      this.passwordSignal.set('');
+      this.confirmPasswordSignal.set('');
+    } else if (tab === 'register') {
+      this.passwordSignal.set(this.password || '');
+      this.confirmPasswordSignal.set('');
+    } else {
+      this.passwordSignal.set('');
+      this.confirmPasswordSignal.set('');
+    }
+  }
+
+  goToRecoveryStep(step: 'request' | 'code'): void {
+    const current = this.recoverStepNumber();
+    const target = step === 'request' ? 1 : 2;
+    if (target < current) {
+      this.error.set('');
+      this.recoverStep.set(step);
+    }
+  }
+
+  private startResendCooldown(): void {
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+    this.resendCooldown.set(30);
+    this.cooldownTimer = setInterval(() => {
+      const current = this.resendCooldown();
+      if (current <= 1) {
+        this.resendCooldown.set(0);
+        if (this.cooldownTimer) clearInterval(this.cooldownTimer);
+      } else {
+        this.resendCooldown.set(current - 1);
+      }
+    }, 1000);
   }
 
   ngAfterViewInit(): void {
@@ -87,6 +169,7 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.waitForGoogle) clearInterval(this.waitForGoogle);
+    if (this.cooldownTimer) clearInterval(this.cooldownTimer);
   }
 
   private renderButtonWhenReady(): void {
@@ -172,5 +255,105 @@ export class LoginComponent implements AfterViewInit, OnDestroy {
       return;
     }
     this.navigateAfterLogin();
+  }
+
+  async onRequestRecoveryCode(): Promise<void> {
+    this.error.set('');
+    this.successMessage.set('');
+    const targetEmail = this.email.trim();
+    if (!targetEmail) {
+      this.error.set('Ingresa el correo electrónico de tu cuenta para enviarte el código.');
+      return;
+    }
+
+    this.signingIn.set(true);
+    const result = await this.auth.requestPasswordReset(targetEmail);
+    this.signingIn.set(false);
+
+    if (!result.success) {
+      this.error.set(result.error || 'No pudimos enviar el código de recuperación.');
+      return;
+    }
+
+    this.recoverStep.set('code');
+    this.recoveryInfo.set(
+      result.message || `Enviamos un código de 6 dígitos a ${targetEmail}.`
+    );
+    this.devPreviewCode.set(result.devPreviewCode || '');
+    this.startResendCooldown();
+  }
+
+  async onVerifyRecoveryCode(): Promise<void> {
+    this.error.set('');
+    this.successMessage.set('');
+
+    const targetEmail = this.email.trim();
+    const cleanCode = this.resetCode.trim();
+    if (!/^\d{6}$/.test(cleanCode)) {
+      this.error.set('Ingresa el código numérico de 6 dígitos enviado a tu correo.');
+      return;
+    }
+
+    this.signingIn.set(true);
+    const result = await this.auth.verifyResetCode(targetEmail, cleanCode);
+    this.signingIn.set(false);
+
+    if (!result.success) {
+      this.error.set(result.error || 'El código ingresado no es válido o expiró.');
+      return;
+    }
+
+    this.recoverStep.set('password');
+    this.passwordSignal.set(this.newPassword || '');
+    this.confirmPasswordSignal.set(this.confirmPassword || '');
+  }
+
+  async onResetPasswordSubmit(): Promise<void> {
+    this.error.set('');
+    this.successMessage.set('');
+
+    const targetEmail = this.email.trim();
+    const cleanCode = this.resetCode.trim();
+
+    if (!/^\d{6}$/.test(cleanCode)) {
+      this.error.set('Ingresa el código numérico de 6 dígitos enviado a tu correo.');
+      return;
+    }
+    if (this.newPassword.length < 6) {
+      this.error.set('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (this.newPassword !== this.confirmPassword) {
+      this.error.set('Las contraseñas nuevas no coinciden.');
+      return;
+    }
+
+    this.signingIn.set(true);
+    const result = await this.auth.resetPasswordWithCode(
+      targetEmail,
+      cleanCode,
+      this.newPassword
+    );
+    this.signingIn.set(false);
+
+    if (!result.success) {
+      this.error.set(result.error || 'El código no es válido o ya expiró.');
+      return;
+    }
+
+    this.password = '';
+    this.newPassword = '';
+    this.confirmPassword = '';
+    this.resetCode = '';
+    this.devPreviewCode.set('');
+    this.passwordSignal.set('');
+    this.confirmPasswordSignal.set('');
+    this.showPassword.set(false);
+    this.showConfirmPassword.set(false);
+    this.authTab.set('login');
+    this.recoverStep.set('request');
+    this.successMessage.set(
+      result.message || '¡Contraseña actualizada! Ya puedes iniciar sesión con tu nueva contraseña.'
+    );
   }
 }

@@ -8,5 +8,6 @@ router.get('/', protect, bookingController.getBookings);
 router.get('/summary', protect, bookingController.getBookingSummary);
 router.get('/:id', protect, bookingController.getBookingById);
 router.patch('/:id/status', protect, bookingController.updateBookingStatus);
+router.delete('/:id', protect, bookingController.deleteBooking);
 
 module.exports = router;

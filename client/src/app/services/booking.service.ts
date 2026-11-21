@@ -33,4 +33,8 @@ export class BookingService {
   updateBookingStatus(id: string, status: 'confirmada' | 'pendiente' | 'cancelada'): Observable<{ success: boolean; message: string; data: BookingItem }> {
     return this.http.patch<{ success: boolean; message: string; data: BookingItem }>(`${this.apiUrl}/${id}/status`, { status });
   }
+
+  deleteBooking(id: string): Observable<{ success: boolean; message: string; data: { _id: string } }> {
+    return this.http.delete<{ success: boolean; message: string; data: { _id: string } }>(`${this.apiUrl}/${id}`);
+  }
 }

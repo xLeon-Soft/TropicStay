@@ -22,6 +22,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     select: false,
   },
+  resetPasswordCodeHash: {
+    type: String,
+    select: false,
+  },
+  resetPasswordExpiresAt: {
+    type: Date,
+    select: false,
+  },
+  resetPasswordAttempts: {
+    type: Number,
+    default: 0,
+    select: false,
+  },
+  resetPasswordVerified: {
+    type: Boolean,
+    default: false,
+    select: false,
+  },
   phone: {
     type: String,
     default: '+502 5555-0000',

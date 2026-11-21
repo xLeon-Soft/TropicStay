@@ -15,21 +15,22 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: clamp(0.65rem, 1.5vw, 1.35rem);
 }
 
 /* Brand */
 .navbar-brand {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   text-decoration: none;
   background: transparent;
   padding: 0.1rem 0;
 }
 
 .brand-logo-img {
-  height: 200px;
-  max-height: 105px;
+  height: clamp(46px, 5.4vw, 72px);
+  max-height: 72px;
   width: auto;
   object-fit: contain;
   display: block;
@@ -46,23 +47,27 @@
   align-items: center;
   justify-content: center;
   flex: 1;
-  gap: 1.25rem;
+  min-width: 0;
+  gap: clamp(0.35rem, 1vw, 1.1rem);
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.62rem .9rem;
+  gap: 0.4rem;
+  padding: 0.48rem 0.72rem;
   border-radius: var(--radius-full);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
   color: var(--text-muted);
   transition: all var(--transition-fast);
 }
 
 .nav-item i {
-  font-size: 0.9rem;
+  font-size: 0.84rem;
+  flex-shrink: 0;
   color: var(--primary-light);
   transition: transform var(--transition-fast);
 }
@@ -83,20 +88,23 @@
 .navbar-actions {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: clamp(0.4rem, 0.9vw, 0.75rem);
+  flex-shrink: 0;
 }
 
 .currency-toggle {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.85rem;
-  border-radius: 12px;
+  gap: 0.35rem;
+  padding: 0.42rem 0.72rem;
+  border-radius: 11px;
   background: #FFFFFF;
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
 }
@@ -114,13 +122,15 @@
 .btn-publish {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1.35rem;
-  border-radius: 12px;
+  gap: 0.42rem;
+  padding: 0.52rem 1rem;
+  border-radius: 11px;
   background: var(--primary);
   color: #fff;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.83rem;
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 1px solid rgba(111, 255, 228, 0.62);
   box-shadow: 0 0 0 1px rgba(66, 220, 192, 0.16), 0 0 16px rgba(66, 220, 192, 0.13);
   transition: all var(--transition-fast);
@@ -133,8 +143,9 @@
 
 .btn-favorites {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
@@ -142,7 +153,7 @@
   background: #FFFFFF;
   border: 1px solid rgba(255, 154, 92, 0.42);
   color: #E11D48;
-  font-size: 1rem;
+  font-size: 0.92rem;
   box-shadow: var(--shadow-sm);
   transition: all var(--transition-fast);
 }
@@ -155,20 +166,28 @@
 .user-menu {
   display: inline-flex;
   align-items: center;
-  gap: .45rem;
-  max-width: 180px;
-  padding: .35rem .65rem .35rem .4rem;
+  gap: 0.42rem;
+  max-width: 175px;
+  padding: 0.3rem 0.62rem 0.3rem 0.35rem;
   border: 1px solid rgba(78, 155, 143, 0.38);
   border-radius: var(--radius-full);
   background: #fff;
   color: var(--text-main);
-  font-size: .8rem;
+  font-size: 0.78rem;
   font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.user-menu span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-menu img {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -248,7 +267,19 @@
   color: var(--text-muted);
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1180px) {
+  .nav-item {
+    padding: 0.42rem 0.56rem;
+    font-size: 0.8rem;
+  }
+
+  .btn-publish {
+    padding: 0.46rem 0.85rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 1040px) {
   .nav-links, .btn-publish, .user-menu-wrapper, .user-menu {
     display: none;
   }
@@ -256,6 +287,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
   .mobile-nav {
     display: flex;

@@ -228,4 +228,30 @@ describe('MessagesComponent (Chat Amplio y Sincronización en Tiempo Real)', () 
     expect(chatWidget.activePartnerId()).toBe('partner-1');
     expect(navigatedTo).toEqual(['/chalet', 'chalet-1']);
   });
+
+  it('mantiene ocultos los mensajes fijos por defecto y permite colapsar barra lateral y banner del chalet para ampliar el chat', () => {
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(component.showQuickReplies()).toBe(false);
+    expect(el.querySelector('.quick-replies-strip')).toBeNull();
+
+    component.toggleQuickReplies();
+    fixture.detectChanges();
+    expect(el.querySelector('.quick-replies-strip')).not.toBeNull();
+
+    component.useQuickMessage('visit');
+    fixture.detectChanges();
+    expect(component.draft()).toContain('Chalet Mirador Esmeralda');
+    expect(component.showQuickReplies()).toBe(false);
+
+    expect(el.querySelector('.conv-chalet-banner')).not.toBeNull();
+    component.toggleChaletBanner();
+    fixture.detectChanges();
+    expect(el.querySelector('.conv-chalet-banner')).toBeNull();
+
+    expect(component.isSidebarCollapsed()).toBe(false);
+    component.toggleSidebar();
+    fixture.detectChanges();
+    expect(el.querySelector('.messages-shell')?.classList.contains('sidebar-collapsed')).toBe(true);
+  });
 });

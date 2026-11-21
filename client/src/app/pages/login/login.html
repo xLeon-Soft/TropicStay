@@ -13,96 +13,303 @@
     <div class="auth-divider"><span>o continúa con tu correo</span></div>
 
     <div class="auth-tabs">
-      <button type="button" [class.active]="authTab() === 'login'" (click)="authTab.set('login'); error.set('')">
+      <button type="button" [class.active]="authTab() === 'login'" (click)="switchAuthTab('login')">
         Iniciar Sesión
       </button>
-      <button type="button" [class.active]="authTab() === 'register'" (click)="authTab.set('register'); error.set('')">
+      <button type="button" [class.active]="authTab() === 'register'" (click)="switchAuthTab('register')">
         Crear Cuenta
       </button>
     </div>
 
-    <form (ngSubmit)="onEmailSubmit()" class="email-auth-form">
-      @if (authTab() === 'register') {
-        <div class="auth-field">
-          <label for="authName">Nombre Completo</label>
-          <input id="authName" type="text" [(ngModel)]="name" name="name" placeholder="Ej: Sofía Méndez" required />
-        </div>
-      }
+    @if (successMessage()) {
+      <p class="login-success" role="status">
+        <i class="fa-solid fa-circle-check"></i> {{ successMessage() }}
+      </p>
+    }
 
-      <div class="auth-field">
-        <label for="authEmail">Correo Electrónico</label>
-        <input id="authEmail" type="email" [(ngModel)]="email" name="email" placeholder="tu@correo.com" required />
-      </div>
-
-      <div class="auth-field">
-        <label for="authPassword">Contraseña</label>
-        <div class="password-input-wrap">
-          <input
-            id="authPassword"
-            [type]="showPassword() ? 'text' : 'password'"
-            [ngModel]="password"
-            (ngModelChange)="onPasswordInput($event)"
-            name="password"
-            placeholder="Mínimo 6 caracteres"
-            required />
-          <button
-            type="button"
-            class="btn-toggle-password"
-            (click)="togglePasswordVisibility()"
-            [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
-            [title]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
-            <i class="fa-solid" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
+    @if (authTab() === 'recover') {
+      <div class="recovery-panel">
+        <div class="recovery-header">
+          <button type="button" class="btn-back-login" (click)="switchAuthTab('login')">
+            <i class="fa-solid fa-arrow-left"></i> Volver
           </button>
+          <div>
+            <h2>Recuperar cuenta</h2>
+            <small>Completa los 3 pasos para restablecer tu contraseña</small>
+          </div>
+        </div>
+
+        <!-- Stepper Visual (1. Correo -> 2. Código -> 3. Nueva clave) -->
+        <ol class="recovery-stepper" aria-label="Pasos de recuperación de cuenta">
+          <li
+            class="stepper-item"
+            [class.is-active]="recoverStepNumber() === 1"
+            [class.is-done]="recoverStepNumber() > 1">
+            <button
+              type="button"
+              class="stepper-btn"
+              [disabled]="recoverStepNumber() <= 1"
+              (click)="goToRecoveryStep('request')">
+              <span class="stepper-circle">
+                @if (recoverStepNumber() > 1) {
+                  <i class="fa-solid fa-check"></i>
+                } @else {
+                  1
+                }
+              </span>
+              <span class="stepper-label">Correo</span>
+            </button>
+          </li>
+
+          <li class="stepper-connector" [class.is-done]="recoverStepNumber() > 1" aria-hidden="true"></li>
+
+          <li
+            class="stepper-item"
+            [class.is-active]="recoverStepNumber() === 2"
+            [class.is-done]="recoverStepNumber() > 2">
+            <button
+              type="button"
+              class="stepper-btn"
+              [disabled]="recoverStepNumber() <= 2"
+              (click)="goToRecoveryStep('code')">
+              <span class="stepper-circle">
+                @if (recoverStepNumber() > 2) {
+                  <i class="fa-solid fa-check"></i>
+                } @else {
+                  2
+                }
+              </span>
+              <span class="stepper-label">Código</span>
+            </button>
+          </li>
+
+          <li class="stepper-connector" [class.is-done]="recoverStepNumber() > 2" aria-hidden="true"></li>
+
+          <li class="stepper-item" [class.is-active]="recoverStepNumber() === 3">
+            <div class="stepper-btn is-static">
+              <span class="stepper-circle">3</span>
+              <span class="stepper-label">Nueva clave</span>
+            </div>
+          </li>
+        </ol>
+
+        @if (recoverStep() === 'request') {
+          <form (ngSubmit)="onRequestRecoveryCode()" class="email-auth-form">
+            <div class="auth-field">
+              <label for="recoverEmail">1. Correo electrónico de tu cuenta</label>
+              <input
+                id="recoverEmail"
+                type="email"
+                [(ngModel)]="email"
+                name="recoverEmail"
+                placeholder="tu@correo.com"
+                required />
+            </div>
+
+            <button type="submit" class="btn-auth-submit" [disabled]="signingIn()">
+              @if (signingIn()) {
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Enviando código...
+              } @else {
+                <i class="fa-solid fa-envelope-circle-check"></i> Enviar código y continuar
+              }
+            </button>
+          </form>
+        } @else if (recoverStep() === 'code') {
+          <div class="recovery-info-banner">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span>{{ recoveryInfo() }}</span>
+          </div>
+
+          @if (devPreviewCode()) {
+            <div class="dev-preview-box">
+              <strong>Código de prueba local:</strong>
+              <span class="dev-otp-code">{{ devPreviewCode() }}</span>
+            </div>
+          }
+
+          <form (ngSubmit)="onVerifyRecoveryCode()" class="email-auth-form">
+            <div class="auth-field">
+              <label for="resetCode">2. Código de 6 dígitos enviado a {{ email }}</label>
+              <input
+                id="resetCode"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                class="otp-input"
+                [(ngModel)]="resetCode"
+                name="resetCode"
+                placeholder="000000"
+                required />
+            </div>
+
+            <button type="submit" class="btn-auth-submit" [disabled]="signingIn()">
+              @if (signingIn()) {
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Verificando código...
+              } @else {
+                <i class="fa-solid fa-arrow-right"></i> Verificar código y continuar
+              }
+            </button>
+
+            <div class="recovery-step-links">
+              <button
+                type="button"
+                class="btn-resend-code"
+                (click)="goToRecoveryStep('request')">
+                Cambiar correo
+              </button>
+              <button
+                type="button"
+                class="btn-resend-code"
+                [disabled]="signingIn() || resendCooldown() > 0"
+                (click)="onRequestRecoveryCode()">
+                @if (resendCooldown() > 0) {
+                  Reenviar en {{ resendCooldown() }}s
+                } @else {
+                  Reenviar código
+                }
+              </button>
+            </div>
+          </form>
+        } @else {
+          <div class="recovery-verified-pill">
+            <i class="fa-solid fa-shield-check"></i>
+            <span>Código verificado para <strong>{{ email }}</strong>. Define tu nueva contraseña:</span>
+          </div>
+
+          <form (ngSubmit)="onResetPasswordSubmit()" class="email-auth-form">
+            <div class="auth-field">
+              <label for="newPassword">3. Nueva Contraseña</label>
+              <div class="password-input-wrap">
+                <input
+                  id="newPassword"
+                  [type]="showPassword() ? 'text' : 'password'"
+                  [ngModel]="newPassword"
+                  (ngModelChange)="onNewPasswordInput($event)"
+                  name="newPassword"
+                  placeholder="Mínimo 6 caracteres"
+                  required />
+                <button
+                  type="button"
+                  class="btn-toggle-password"
+                  (click)="togglePasswordVisibility()"
+                  [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+                  <i class="fa-solid" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
+                </button>
+              </div>
+
+              <ng-container
+                *ngTemplateOutlet="passwordStrengthTpl; context: { strength: passwordStrength(), checks: passwordChecks(), caption: 'Seguridad de nueva contraseña:' }" />
+            </div>
+
+            <div class="auth-field">
+              <label for="confirmPassword">Confirmar Nueva Contraseña</label>
+              <div class="password-input-wrap">
+                <input
+                  id="confirmPassword"
+                  [type]="showConfirmPassword() ? 'text' : 'password'"
+                  [ngModel]="confirmPassword"
+                  (ngModelChange)="onConfirmPasswordInput($event)"
+                  name="confirmPassword"
+                  placeholder="Repite tu nueva contraseña"
+                  required />
+                <button
+                  type="button"
+                  class="btn-toggle-password btn-toggle-confirm-password"
+                  (click)="toggleConfirmPasswordVisibility()"
+                  [attr.aria-label]="showConfirmPassword() ? 'Ocultar confirmación de contraseña' : 'Ver confirmación de contraseña'">
+                  <i class="fa-solid" [class.fa-eye]="!showConfirmPassword()" [class.fa-eye-slash]="showConfirmPassword()"></i>
+                </button>
+              </div>
+
+              <ng-container
+                *ngTemplateOutlet="passwordStrengthTpl; context: { strength: confirmPasswordStrength(), checks: confirmPasswordChecks(), caption: 'Seguridad al confirmar:' }" />
+
+              @if (confirmPasswordSignal()) {
+                <div class="password-match-pill" [class.is-match]="passwordsMatch()" [class.is-mismatch]="!passwordsMatch()">
+                  <i class="fa-solid" [class.fa-circle-check]="passwordsMatch()" [class.fa-circle-xmark]="!passwordsMatch()"></i>
+                  <span>{{ passwordsMatch() ? 'Las contraseñas coinciden correctamente.' : 'Las contraseñas aún no coinciden.' }}</span>
+                </div>
+              }
+            </div>
+
+            <button type="submit" class="btn-auth-submit" [disabled]="signingIn()">
+              @if (signingIn()) {
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Actualizando...
+              } @else {
+                <i class="fa-solid fa-key"></i> Guardar nueva contraseña
+              }
+            </button>
+          </form>
+        }
+      </div>
+    } @else {
+      <form (ngSubmit)="onEmailSubmit()" class="email-auth-form">
+        @if (authTab() === 'register') {
+          <div class="auth-field">
+            <label for="authName">Nombre Completo</label>
+            <input id="authName" type="text" [(ngModel)]="name" name="name" placeholder="Ej: Sofía Méndez" required />
+          </div>
+        }
+
+        <div class="auth-field">
+          <label for="authEmail">Correo Electrónico</label>
+          <input id="authEmail" type="email" [(ngModel)]="email" name="email" placeholder="tu@correo.com" required />
+        </div>
+
+        <div class="auth-field">
+          <label for="authPassword">Contraseña</label>
+          <div class="password-input-wrap">
+            <input
+              id="authPassword"
+              [type]="showPassword() ? 'text' : 'password'"
+              [ngModel]="password"
+              (ngModelChange)="onPasswordInput($event)"
+              name="password"
+              placeholder="Mínimo 6 caracteres"
+              required />
+            <button
+              type="button"
+              class="btn-toggle-password"
+              (click)="togglePasswordVisibility()"
+              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+              [title]="showPassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+              <i class="fa-solid" [class.fa-eye]="!showPassword()" [class.fa-eye-slash]="showPassword()"></i>
+            </button>
+          </div>
+
+          @if (authTab() === 'login') {
+            <div class="forgot-link-row">
+              <button type="button" class="btn-forgot-password" (click)="switchAuthTab('recover')">
+                ¿Olvidaste tu contraseña? Recupérala por correo
+              </button>
+            </div>
+          }
+
+          @if (authTab() === 'register') {
+            <ng-container
+              *ngTemplateOutlet="passwordStrengthTpl; context: { strength: passwordStrength(), checks: passwordChecks(), caption: 'Seguridad de contraseña:' }" />
+          }
         </div>
 
         @if (authTab() === 'register') {
-          <div class="password-strength-box" [attr.data-tone]="passwordStrength().tone">
-            <div class="strength-header">
-              <span class="strength-caption">Seguridad de contraseña:</span>
-              <strong class="strength-label">{{ passwordStrength().label }}</strong>
-            </div>
-            <div class="strength-track" aria-hidden="true">
-              <div class="strength-fill" [style.width.%]="passwordStrength().percent"></div>
-            </div>
-            <div class="strength-criteria">
-              <span [class.met]="passwordChecks().goodLength">
-                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().goodLength" [class.fa-circle]="!passwordChecks().goodLength"></i>
-                8+ caracteres
-              </span>
-              <span [class.met]="passwordChecks().uppercase">
-                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().uppercase" [class.fa-circle]="!passwordChecks().uppercase"></i>
-                Mayúscula
-              </span>
-              <span [class.met]="passwordChecks().number">
-                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().number" [class.fa-circle]="!passwordChecks().number"></i>
-                Número
-              </span>
-              <span [class.met]="passwordChecks().special">
-                <i class="fa-solid" [class.fa-circle-check]="passwordChecks().special" [class.fa-circle]="!passwordChecks().special"></i>
-                Símbolo
-              </span>
-            </div>
+          <div class="auth-field">
+            <label for="authPhone">Teléfono de contacto</label>
+            <input id="authPhone" type="tel" [(ngModel)]="phone" name="phone" placeholder="+502 5555-1234" />
           </div>
         }
-      </div>
 
-      @if (authTab() === 'register') {
-        <div class="auth-field">
-          <label for="authPhone">Teléfono de contacto</label>
-          <input id="authPhone" type="tel" [(ngModel)]="phone" name="phone" placeholder="+502 5555-1234" />
-        </div>
-      }
-
-      <button type="submit" class="btn-auth-submit" [disabled]="signingIn()">
-        @if (signingIn()) {
-          <i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...
-        } @else if (authTab() === 'login') {
-          <i class="fa-solid fa-right-to-bracket"></i> Ingresar a TropicStay
-        } @else {
-          <i class="fa-solid fa-user-plus"></i> Registrarme y Entrar
-        }
-      </button>
-    </form>
+        <button type="submit" class="btn-auth-submit" [disabled]="signingIn()">
+          @if (signingIn()) {
+            <i class="fa-solid fa-circle-notch fa-spin"></i> Procesando...
+          } @else if (authTab() === 'login') {
+            <i class="fa-solid fa-right-to-bracket"></i> Ingresar a TropicStay
+          } @else {
+            <i class="fa-solid fa-user-plus"></i> Registrarme y Entrar
+          }
+        </button>
+      </form>
+    }
 
     @if (error()) {
       <p class="login-error" role="alert"><i class="fa-solid fa-circle-exclamation"></i> {{ error() }}</p>
@@ -111,3 +318,33 @@
     <small>Al continuar, aceptas nuestros términos de uso y política de privacidad.</small>
   </div>
 </section>
+
+<ng-template #passwordStrengthTpl let-strength="strength" let-checks="checks" let-caption="caption">
+  <div class="password-strength-box" [attr.data-tone]="strength.tone">
+    <div class="strength-header">
+      <span class="strength-caption">{{ caption }}</span>
+      <strong class="strength-label">{{ strength.label }}</strong>
+    </div>
+    <div class="strength-track" aria-hidden="true">
+      <div class="strength-fill" [style.width.%]="strength.percent"></div>
+    </div>
+    <div class="strength-criteria">
+      <span [class.met]="checks.goodLength">
+        <i class="fa-solid" [class.fa-circle-check]="checks.goodLength" [class.fa-circle]="!checks.goodLength"></i>
+        8+ caracteres
+      </span>
+      <span [class.met]="checks.uppercase">
+        <i class="fa-solid" [class.fa-circle-check]="checks.uppercase" [class.fa-circle]="!checks.uppercase"></i>
+        Mayúscula
+      </span>
+      <span [class.met]="checks.number">
+        <i class="fa-solid" [class.fa-circle-check]="checks.number" [class.fa-circle]="!checks.number"></i>
+        Número
+      </span>
+      <span [class.met]="checks.special">
+        <i class="fa-solid" [class.fa-circle-check]="checks.special" [class.fa-circle]="!checks.special"></i>
+        Símbolo
+      </span>
+    </div>
+  </div>
+</ng-template>

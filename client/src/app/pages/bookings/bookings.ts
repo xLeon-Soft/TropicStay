@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -30,16 +30,65 @@ export class BookingsComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
   private realtimeSub?: Subscription;
+  private deletedRealtimeSub?: Subscription;
   private highlightTimer?: ReturnType<typeof setTimeout>;
 
-  allBookings: BookingItem[] = [];
-  isLoading = true;
-  error = '';
-  updatingBookingId = '';
-  highlightedBookingId = '';
+  private readonly _allBookings = signal<BookingItem[]>([]);
+  private readonly _isLoading = signal(true);
+  private readonly _error = signal('');
+  private readonly _updatingBookingId = signal('');
+  private readonly _highlightedBookingId = signal('');
+  private readonly _activeTab = signal<'guest' | 'host'>('guest');
+  private readonly _statusFilter = signal<'all' | 'confirmada' | 'pendiente' | 'cancelada'>('all');
 
-  activeTab: 'guest' | 'host' = 'guest';
-  statusFilter: 'all' | 'confirmada' | 'pendiente' | 'cancelada' = 'all';
+  get allBookings(): BookingItem[] {
+    return this._allBookings();
+  }
+  set allBookings(value: BookingItem[]) {
+    this._allBookings.set(value);
+  }
+
+  get isLoading(): boolean {
+    return this._isLoading();
+  }
+  set isLoading(value: boolean) {
+    this._isLoading.set(value);
+  }
+
+  get error(): string {
+    return this._error();
+  }
+  set error(value: string) {
+    this._error.set(value);
+  }
+
+  get updatingBookingId(): string {
+    return this._updatingBookingId();
+  }
+  set updatingBookingId(value: string) {
+    this._updatingBookingId.set(value);
+  }
+
+  get highlightedBookingId(): string {
+    return this._highlightedBookingId();
+  }
+  set highlightedBookingId(value: string) {
+    this._highlightedBookingId.set(value);
+  }
+
+  get activeTab(): 'guest' | 'host' {
+    return this._activeTab();
+  }
+  set activeTab(value: 'guest' | 'host') {
+    this._activeTab.set(value);
+  }
+
+  get statusFilter(): 'all' | 'confirmada' | 'pendiente' | 'cancelada' {
+    return this._statusFilter();
+  }
+  set statusFilter(value: 'all' | 'confirmada' | 'pendiente' | 'cancelada') {
+    this._statusFilter.set(value);
+  }
 
   ngOnInit(): void {
     this.route.queryParams.subscribe((params) => {
@@ -73,11 +122,21 @@ export class BookingsComponent implements OnInit, OnDestroy {
 
       this.cdr.markForCheck();
     });
+
+    this.deletedRealtimeSub = this.realtime.bookingDeleted$?.subscribe(({ bookingId }) => {
+      if (!bookingId) return;
+      const before = this.allBookings.length;
+      this.allBookings = this.allBookings.filter((item) => item._id !== bookingId);
+      if (this.allBookings.length !== before) {
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.highlightTimer);
     this.realtimeSub?.unsubscribe();
+    this.deletedRealtimeSub?.unsubscribe();
   }
 
   loadBookings(): void {
@@ -207,6 +266,49 @@ export class BookingsComponent implements OnInit, OnDestroy {
           tone: 'error',
           title: 'No se pudo actualizar',
           message: err?.error?.message || 'No se pudo actualizar el estado de la solicitud.',
+        });
+        this.updatingBookingId = '';
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  async deleteBooking(booking: BookingItem): Promise<void> {
+    if (this.updatingBookingId || booking.status !== 'cancelada') return;
+
+    const chaletTitle = booking.chalet?.title || 'este chalet';
+    const isCita = booking.bookingType === 'cita';
+    const accepted = await this.uiDialog.confirm({
+      badge: isCita ? 'Historial de Cita' : 'Historial de Reserva',
+      title: '¿Eliminar esta solicitud del historial?',
+      message: `La solicitud en "${chaletTitle}" se eliminará de forma permanente y ya no aparecerá aquí.`,
+      subtitle: 'Esta acción no se puede deshacer.',
+      confirmText: 'Sí, eliminar solicitud',
+      cancelText: 'Conservar',
+      tone: 'danger',
+      icon: 'fa-solid fa-trash-can',
+    });
+
+    if (!accepted || this.updatingBookingId) return;
+
+    this.updatingBookingId = booking._id;
+    this.bookingService.deleteBooking(booking._id).subscribe({
+      next: () => {
+        this.allBookings = this.allBookings.filter((item) => item._id !== booking._id);
+        this.updatingBookingId = '';
+        this.realtime.refreshCounts();
+        this.uiDialog.notify({
+          tone: 'success',
+          title: 'Solicitud eliminada',
+          message: `La solicitud en "${chaletTitle}" fue eliminada del historial.`,
+        });
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.uiDialog.notify({
+          tone: 'error',
+          title: 'No se pudo eliminar',
+          message: err?.error?.message || 'No se pudo eliminar la solicitud del historial.',
         });
         this.updatingBookingId = '';
         this.cdr.markForCheck();
